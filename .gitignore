@@ -48,3 +48,4 @@ Icon*
 .idea
 /build_results
 /.vscode
+/gql.yml
