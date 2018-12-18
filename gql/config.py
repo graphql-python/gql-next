@@ -1,4 +1,3 @@
-import json
 from typing import Type, TypeVar
 from dataclasses import dataclass
 from dataclasses_json import dataclass_json
@@ -16,7 +15,7 @@ class Config:
     @classmethod
     def load(cls: Type[ConfigT], filename: str) -> ConfigT:
         with open(filename, 'r') as fin:
-            json_str = json.load(fin)
+            json_str = fin.read()
             return cls.from_json(json_str)  # pylint:disable=no-member
 
     def save(self, filename, pretty=True):
