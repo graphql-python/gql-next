@@ -2,6 +2,49 @@ import pytest
 from gql.query_parser import QueryParser
 
 
+def test_document_parser_fails_on_nameless_op(swapi_schema):
+    query = """
+        {
+          allFilms {
+            totalCount
+            edges {
+              node {
+                id
+                title
+                director
+              }
+            }
+          }
+        }
+    """
+
+    parser = QueryParser(swapi_schema)
+
+    with pytest.raises(Exception):
+        parser.parse(query)
+
+
+def test_document_parser_fails_invalid_query(swapi_schema):
+    query = """
+        {
+          allFilms {
+            totalCount
+            edges {
+              node {
+                title
+                nonExistingField
+              }
+            }
+          }
+        }
+    """
+
+    parser = QueryParser(swapi_schema)
+
+    with pytest.raises(Exception):
+        parser.parse(query)
+
+
 def test_document_parse_fragments(swapi_schema):
     """
     Expected result would be something like this:
