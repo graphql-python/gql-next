@@ -30,14 +30,13 @@ def init(schema, root):
         documents=documents
     )
 
-    with open('gql.yml', 'w') as outfile:
-        yaml.dump(config, outfile, default_flow_style=False)
+    config.save('.gql.json')
 
-    click.echo(f"Config file generated at {click.style('gql.yml', fg='bright_white')}\n\n")
+    click.echo(f"Config file generated at {click.style('.gql.json', fg='bright_white')}\n\n")
 
 
 @cli.command()
-@click.option('-c', '--config', 'config_filename', default='gql.yml', type=click.Path(exists=True))
+@click.option('-c', '--config', 'config_filename', default='.gql.json', type=click.Path(exists=True))
 def run(config_filename):
     if not isfile(config_filename):
         click.echo(f'Could not find configuration file {config_filename}')

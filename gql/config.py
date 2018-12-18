@@ -12,10 +12,15 @@ ConfigT = TypeVar('ConfigT', bound='ConfigT')
 class Config:
     schema: str
     documents: str
+    custom_header: str = ''
 
     @classmethod
     def load(cls: Type[ConfigT], filename: str) -> ConfigT:
         with open(filename, 'r') as fin:
-            data = yaml.load(fin)
-            datas = json.dumps(data)
-            return cls.from_json(datas)
+            json_str = json.load(fin)
+            return cls.from_json(json_str)
+
+    def save(self, filename, pretty=True):
+        with open(filename, 'w') as outfile:
+            json_str = self.to_json(indent=2) if pretty else self.to_json()
+            outfile.write(json_str)
