@@ -1,4 +1,4 @@
-from typing import Callable, Mapping
+from typing import Callable, Mapping, Union
 
 import aiohttp
 
@@ -25,7 +25,8 @@ class AsyncIOClient:
 
     async def call(self, query,
                    variables=None,
-                   on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None) -> dict:
+                   return_json=False,
+                   on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None) -> Union[dict, str]:
 
         headers = self.__headers.copy()
 
@@ -39,4 +40,7 @@ class AsyncIOClient:
             on_before_callback(payload, headers)
 
         async with self.session.post(self.endpoint, json=payload, headers=headers, raise_for_status=True) as resp:
-            return await resp.json()
+            if return_json:
+                return await resp.json()
+
+            return await resp.text()

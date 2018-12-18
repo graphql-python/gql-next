@@ -31,6 +31,7 @@ freezegun = "*"
 verchew = "^1.4"
 pre_commit = "~=1.12.0"
 ipython = "^7.0"
+pytest-mock = "^1.10"
 
 [tool.poetry.scripts]
 my-script = 'gql:cli'
