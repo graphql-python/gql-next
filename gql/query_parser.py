@@ -7,6 +7,7 @@ from graphql.language import ast
 
 @dataclass
 class MappingNode:
+    query: str
     node: ast.Node
     name: str
     graphql_type: GraphQLType = None
@@ -17,11 +18,17 @@ class MappingNode:
     def __repr__(self):
         return f'{self.name} ({self.graphql_type})'
 
+@dataclass
+class ParsedQuery:
+    query: str
+    parsed: List[MappingNode]
+
 
 class FieldToTypeMatcherVisitor(Visitor):
 
-    def __init__(self, type_info: TypeInfo):
+    def __init__(self, type_info: TypeInfo, query: str):
         self.type_info = type_info
+        self.query = query
         self.root: List[MappingNode] = []
         self.current: MappingNode = None
 
@@ -31,7 +38,7 @@ class FieldToTypeMatcherVisitor(Visitor):
         op_name = name.value
         name = f'{operation.value.capitalize()}{op_name}Response'
 
-        operation_root = MappingNode(node=node, name=name)
+        operation_root = MappingNode(query=self.query, node=node, name=name)
         self.root.append(operation_root)
         self.current = operation_root
         return node
@@ -48,7 +55,7 @@ class FieldToTypeMatcherVisitor(Visitor):
 
     def enter_fragment_definition(self, node, *_):
         # Same as operation definition
-        fragment = MappingNode(node=node, name=node.name.value)
+        fragment = MappingNode(query=self.query, node=node, name=node.name.value)
         self.root.append(fragment)
         self.current = fragment
         return node
@@ -69,7 +76,7 @@ class FieldToTypeMatcherVisitor(Visitor):
     def enter_field(self, node, *_):
         name = node.alias.value if node.alias else node.name.value
         type_ = self.type_info.get_type()
-        new_node = MappingNode(node=node, name=name, graphql_type=type_, parent=self.current)
+        new_node = MappingNode(query=self.query, node=node, name=name, graphql_type=type_, parent=self.current)
         self.current.children.append(new_node)
         return node
 
@@ -90,7 +97,7 @@ class QueryParser:
         self.schema = schema
         self.__jinja2_env = None
 
-    def parse(self, query: str) -> MappingNode:
+    def parse(self, query: str) -> ParsedQuery:
         document_ast = parse(query)
         operation = get_operation_ast(document_ast)
 
@@ -99,6 +106,7 @@ class QueryParser:
 
         type_info = TypeInfo(self.schema)
 
-        visitor = FieldToTypeMatcherVisitor(type_info)
-        visit(document_ast, TypeInfoVisitor(type_info, visitor), )
-        return visitor.root
+        visitor = FieldToTypeMatcherVisitor(type_info, query)
+        visit(document_ast, TypeInfoVisitor(type_info, visitor))
+        result = ParsedQuery(query=query, parsed=visitor.root)
+        return result

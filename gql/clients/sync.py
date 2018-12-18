@@ -1,4 +1,4 @@
-from typing import Callable, Mapping
+from typing import Callable, Mapping, Union
 
 import requests
 
@@ -17,7 +17,8 @@ class Client:
 
     async def call(self, query,
                    variables=None,
-                   on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None) -> dict:
+                   return_json=False,
+                   on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None) -> Union[dict, str]:
 
         headers = self.__headers.copy()
 
@@ -32,4 +33,4 @@ class Client:
 
         response = requests.post(self.endpoint, json=payload, headers=headers)
         response.raise_for_status()
-        return response.json()
+        return response.json() if return_json else response.text

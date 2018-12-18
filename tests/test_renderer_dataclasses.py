@@ -1,13 +1,13 @@
 import pytest
-from gql.query_parser import QueryParser
+from gql.config import Config
 from gql.renderer_dataclasses import DataclassesRenderer
 
 @pytest.fixture
 def swapi_dataclass_renderer(swapi_schema):
-    return DataclassesRenderer(swapi_schema)
+    return DataclassesRenderer(swapi_schema, Config(schema='schemaurl', documents=''))
 
 
-def test_document_parser_simple_query(swapi_dataclass_renderer, swapi_parser, module_compiler):
+def test_simple_query(swapi_dataclass_renderer, swapi_parser, module_compiler):
     """
     Expect code to render:
     ```
@@ -48,7 +48,6 @@ def test_document_parser_simple_query(swapi_dataclass_renderer, swapi_parser, mo
 
     parsed = swapi_parser.parse(query)
     rendered = swapi_dataclass_renderer.render(parsed)
-    print(rendered)
 
     m = module_compiler(rendered)
     response = m.QueryGetFilm.from_json("""
@@ -69,7 +68,71 @@ def test_document_parser_simple_query(swapi_dataclass_renderer, swapi_parser, mo
     assert data.returnOfTheJedi.director == 'George Lucas'
 
 
-def test_document_parser_query_with_fragment(swapi_parser, swapi_dataclass_renderer, module_compiler):
+def test_simple_query_with_variables(swapi_dataclass_renderer, swapi_parser, module_compiler):
+    """
+    ```
+        @dataclass_json
+        @dataclass(frozen=True)
+        class QueryGetFilm:
+
+
+            @dataclass_json
+            @dataclass(frozen=True)
+            class QueryGetFilmResponse():
+
+
+                @dataclass_json
+                @dataclass(frozen=True)
+                class Film():
+
+                    title: str
+                    director: str
+
+
+                returnOfTheJedi: Film = None
+
+
+            data: QueryGetFilmResponse = None
+            errors: Any = None
+
+            @classmethod
+            def execute(cls, id: str):
+                pass
+    ```
+    """
+    query = """
+        query GetFilm($id: ID!) {
+          returnOfTheJedi: film(id: $id) {
+            title
+            director
+          }
+        }
+    """
+
+    parsed = swapi_parser.parse(query)
+    rendered = swapi_dataclass_renderer.render(parsed)
+    print(rendered)
+
+    m = module_compiler(rendered)
+    response = m.QueryGetFilm.from_json("""
+       {
+           "data": {
+               "returnOfTheJedi": {
+                   "title": "Return of the Jedi",
+                   "director": "George Lucas"
+               }
+           }
+       }
+       """)
+
+    assert response
+
+    data = response.data
+    assert data.returnOfTheJedi.title == 'Return of the Jedi'
+    assert data.returnOfTheJedi.director == 'George Lucas'
+
+
+def test_query_with_fragment(swapi_parser, swapi_dataclass_renderer, module_compiler):
     """
 
         @dataclass_json
@@ -135,7 +198,7 @@ def test_document_parser_query_with_fragment(swapi_parser, swapi_dataclass_rende
     assert data.returnOfTheJedi.openingCrawl == 'la la la'
 
 
-def test_document_parser_query_with_complex_fragment(swapi_parser, swapi_dataclass_renderer, module_compiler):
+def test_query_with_complex_fragment(swapi_parser, swapi_dataclass_renderer, module_compiler):
     """
         ```
         @dataclass_json
@@ -209,7 +272,7 @@ def test_document_parser_query_with_complex_fragment(swapi_parser, swapi_datacla
     assert data.luke.home.name == 'Arakis'
 
 
-def test_document_parser_query_with_complex_inline_fragment(swapi_parser, swapi_dataclass_renderer, module_compiler):
+def test_query_with_complex_inline_fragment(swapi_parser, swapi_dataclass_renderer, module_compiler):
     """
     '''
         @dataclass_json

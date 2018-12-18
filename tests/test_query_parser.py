@@ -60,7 +60,8 @@ def test_document_parse_fragments(swapi_schema):
     """
 
     parser = QueryParser(swapi_schema)
-    parsed = parser.parse(query)
+    result = parser.parse(query)
+    parsed = result.parsed
     assert len(parsed) == 2
     assert parsed[0].name == 'QueryGetAllFilmsResponse'
     assert parsed[1].name == 'HeroFields'

@@ -1,12 +1,9 @@
 import click
-import yaml
-import json
-from jinja2 import Environment, FileSystemLoader
-from os.path import join as join_paths, isfile, dirname
+from os.path import join as join_paths, isfile
 
-from graphql import GraphQLEnumType, GraphQLObjectType, GraphQLNonNull
-
+from gql.config import Config
 from gql.query_parser import QueryParser
+from gql.renderer_dataclasses import DataclassesRenderer
 from gql.utils_schema import load_schema
 
 SCHEMA_PROMPT = click.style('Where is your schema?: ', fg='bright_white') + \
@@ -14,46 +11,6 @@ SCHEMA_PROMPT = click.style('Where is your schema?: ', fg='bright_white') + \
 
 ROOT_PROMPT = click.style('Whats the root of your project: ', fg='bright_white') + \
               click.style('(path or url) ', fg='bright_black', dim=False)
-
-
-def render(schema):
-    def type_to_python(scalar):
-        nullable = True
-        if isinstance(scalar, GraphQLNonNull):
-            nullable = False
-            scalar = scalar.of_type
-
-        mapping = {
-            'String': 'str',
-            'Int': 'int',
-            'Float': 'float',
-            'Boolean': 'bool',
-            'DateTime': 'str'  # TODO: ?
-        }
-
-        mapping = mapping.get(str(scalar), scalar)
-        return mapping if not nullable else f'{mapping} = None'
-
-    env = Environment(
-        loader=FileSystemLoader(join_paths(dirname(__file__), 'templates')),
-        trim_blocks=True,
-        lstrip_blocks=True
-    )
-    env.filters['jsonify'] = json.dumps
-    env.globals.update(type_to_python=type_to_python)
-
-    template = env.get_template('root.j2')
-
-    enums = {k: v for k, v in schema.type_map.items() if isinstance(v, GraphQLEnumType) and not k.startswith('__')}
-    types = {k: v for k, v in schema.type_map.items() if isinstance(v, GraphQLObjectType) and not k.startswith('__')}
-
-    template_vars = {
-        'schema': schema,
-        'enums': enums,
-        'types': types
-    }
-    output = template.render(template_vars)
-    return output
 
 
 @click.group()
@@ -68,7 +25,7 @@ def init(schema, root):
         click.confirm('gql.yml already exists. Are you sure you want to continue?', abort=True)
 
     documents = join_paths(root, '**/*.graphql')
-    config = dict(
+    config = Config(
         schema=schema,
         documents=documents
     )
@@ -85,12 +42,9 @@ def run(config_filename):
     if not isfile(config_filename):
         click.echo(f'Could not find configuration file {config_filename}')
 
-    with open(config_filename, 'r') as fin:
-        config = yaml.load(fin)
+    config = Config.load(config_filename)
 
-    schema = load_schema(config['schema'])
-    # print(schema.type_map)
-    # print(render(schema))
+    schema = load_schema(config.schema)
 
     query = """
     query MyQuery {
@@ -112,7 +66,10 @@ def run(config_filename):
     """
 
     query_parser = QueryParser(schema)
-    print(query_parser.parse(query))
+    query_renderer = DataclassesRenderer(schema)
+
+    parsed = query_parser.parse(query)
+    print(query_renderer.render(parsed))
 
 
 if __name__ == '__main__':
