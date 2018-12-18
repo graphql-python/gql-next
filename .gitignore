@@ -49,3 +49,4 @@ Icon*
 /build_results
 /.vscode
 /gql.yml
+/.gql.json
