@@ -68,7 +68,7 @@ def test_simple_query(swapi_dataclass_renderer, swapi_parser, module_compiler):
     assert data.returnOfTheJedi.director == 'George Lucas'
 
 
-def test_simple_query_with_variables(swapi_dataclass_renderer, swapi_parser, module_compiler):
+def test_simple_query_with_variables(swapi_dataclass_renderer, swapi_parser, module_compiler, mocker):
     """
     ```
         @dataclass_json
@@ -111,10 +111,11 @@ def test_simple_query_with_variables(swapi_dataclass_renderer, swapi_parser, mod
 
     parsed = swapi_parser.parse(query)
     rendered = swapi_dataclass_renderer.render(parsed)
-    print(rendered)
 
     m = module_compiler(rendered)
-    response = m.QueryGetFilm.from_json("""
+
+    call_mock = mocker.patch.object(m.Client, 'call')
+    call_mock.return_value = """
        {
            "data": {
                "returnOfTheJedi": {
@@ -123,11 +124,13 @@ def test_simple_query_with_variables(swapi_dataclass_renderer, swapi_parser, mod
                }
            }
        }
-       """)
+    """
 
-    assert response
+    result = m.QueryGetFilm.execute('luke')
+    assert result
+    assert isinstance(result, m.QueryGetFilm)
 
-    data = response.data
+    data = result.data
     assert data.returnOfTheJedi.title == 'Return of the Jedi'
     assert data.returnOfTheJedi.director == 'George Lucas'
 
