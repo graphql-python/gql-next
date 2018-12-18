@@ -29,18 +29,18 @@ class {name}:
 
 OPERATION_EXEC_FUNC_TEMPLATE = """
 @classmethod
-def execute(cls, {vars_args}, on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None):
+def execute(cls, {vars_args} on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None):
     client = Client('{url}')
     variables = {vars_dict}
     response_text = client.call(cls.__QUERY__, variables=variables, on_before_callback=on_before_callback)
     return cls.from_json(response_text)
 
-# @classmethod
-# async def execute_async(cls, {vars_args}, on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None):
-#     client = AsyncClient('{url}')
-#     variables = {vars_dict}
-#     response_text = await client.call(cls.__QUERY__, variables=variables, on_before_callback=on_before_callback)
-#     return cls.from_json(response_text)
+@classmethod
+async def execute_async(cls, {vars_args} on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None):
+    client = AsyncClient('{url}')
+    variables = {vars_dict}
+    response_text = await client.call(cls.__QUERY__, variables=variables, on_before_callback=on_before_callback)
+    return cls.from_json(response_text)
 """
 
 
@@ -108,8 +108,12 @@ class DataclassesRenderer:
         # Execution functions
         variables = [(vdef.variable.name.value, self.__variable_type_to_python(vdef.type)) for vdef in graphql_node.variable_definitions]
 
-        variables_arguments = ', '.join([f'{vdef.variable.name.value}: {self.__variable_type_to_python(vdef.type)}' for vdef in graphql_node.variable_definitions])
-        variables_dict = '{' + ', '.join(f'"{name}": {name}' for name, _ in variables) + '}' if variables else 'None'
+        if variables:
+            variables_arguments = ', '.join([f'{vdef.variable.name.value}: {self.__variable_type_to_python(vdef.type)}' for vdef in graphql_node.variable_definitions]) + ','
+            variables_dict = '{' + ', '.join(f'"{name}": {name}' for name, _ in variables) + '}'
+        else:
+            variables_arguments = ','
+            variables_dict = 'None'
 
         for line in OPERATION_EXEC_FUNC_TEMPLATE.format(vars_args=variables_arguments, vars_dict=variables_dict, url=self.config.schema).split(os.linesep):
             yield ind1 + line
