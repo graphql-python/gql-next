@@ -112,7 +112,7 @@ class DataclassesRenderer:
             variables_arguments = ', '.join([f'{vdef.variable.name.value}: {self.__variable_type_to_python(vdef.type)}' for vdef in graphql_node.variable_definitions]) + ','
             variables_dict = '{' + ', '.join(f'"{name}": {name}' for name, _ in variables) + '}'
         else:
-            variables_arguments = ','
+            variables_arguments = ''
             variables_dict = 'None'
 
         for line in OPERATION_EXEC_FUNC_TEMPLATE.format(vars_args=variables_arguments, vars_dict=variables_dict, url=self.config.schema).split(os.linesep):
