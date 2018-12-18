@@ -65,7 +65,7 @@ def run(config_filename):
     """
 
     query_parser = QueryParser(schema)
-    query_renderer = DataclassesRenderer(schema)
+    query_renderer = DataclassesRenderer(schema, config)
 
     parsed = query_parser.parse(query)
     print(query_renderer.render(parsed))

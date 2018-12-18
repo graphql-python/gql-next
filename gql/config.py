@@ -1,4 +1,3 @@
-import yaml
 import json
 from typing import Type, TypeVar
 from dataclasses import dataclass
@@ -18,9 +17,9 @@ class Config:
     def load(cls: Type[ConfigT], filename: str) -> ConfigT:
         with open(filename, 'r') as fin:
             json_str = json.load(fin)
-            return cls.from_json(json_str)
+            return cls.from_json(json_str)  # pylint:disable=no-member
 
     def save(self, filename, pretty=True):
         with open(filename, 'w') as outfile:
-            json_str = self.to_json(indent=2) if pretty else self.to_json()
+            json_str = self.to_json(indent=2) if pretty else self.to_json()  # pylint:disable=no-member
             outfile.write(json_str)
