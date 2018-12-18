@@ -15,10 +15,10 @@ jinja2 = "^2.10"
 inflection = "^0.3.1"
 dataclasses-json = "^0.2.0"
 
-aiohttp = { version = "^3.4", optional = true }
+aiohttp = {version = "^3.4", optional = true}
 
 [tool.poetry.extras]
-aiohttp = ["asyncio"]
+async = ["aiohttp"]
 
 [tool.poetry.dev-dependencies]
 pylint = "^2.2.2"

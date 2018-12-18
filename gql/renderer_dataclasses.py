@@ -40,23 +40,21 @@ class DataclassesRenderer:
         return FILE_HEADER + '\n'.join(lines)
 
     def render_common(self):
+        # pylint:disable=no-self-use
         return ''
 
     def __do_render(self, node: MappingNode, indent=0):
         if node.node.kind == 'operation_definition':
-            for l in self.__render_operation(node, indent=indent):
-                yield l
+            yield from self.__render_operation(node, indent=indent)
 
         elif node.node.kind == 'fragment_definition':
-            for l in self.__render_python_class(node, indent=indent):
-                yield l
+            yield from self.__render_python_class(node, indent=indent)
 
         elif node.node.kind == 'field':
             field_typename = self.__scalar_type_to_python(node.graphql_type) #f'{node.node.name.value.capitalize()}Response'
 
             if node.children or node.fragments:
-                for l in self.__render_python_class(node, indent=indent):
-                    yield l
+                yield from self.__render_python_class(node, indent=indent)
 
             # render field
             yield f'{self.indent(indent)}{node.name}: {field_typename}'
@@ -66,38 +64,36 @@ class DataclassesRenderer:
         graphql_node = node.node
         op_name = f'{graphql_node.operation.value.capitalize()}{graphql_node.name.value}'
 
-        i = self.indent(indent)
-        i1 = self.indent(indent+1)
+        ind = self.indent(indent)
+        ind1 = self.indent(indent+1)
 
         op_def = OPERATION_TEMPLATE.format(name=op_name)
         for line in op_def.split(os.linesep):
-            yield i + line
+            yield ind + line
 
-        for l in self.__render_python_class(node, indent=indent+1):
-            yield l
+        yield from self.__render_python_class(node, indent=indent+1)
 
-        yield i1 + f'data: {node.name} = None'
-        yield i1 + 'errors: Any = None'
+        yield ind1 + f'data: {node.name} = None'
+        yield ind1 + 'errors: Any = None'
 
     def __render_python_class(self, node: MappingNode, indent: int = 0):
         graphql_type = node.graphql_type if not isinstance(node.graphql_type, GraphQLWrappingType) else node.graphql_type.of_type
 
-        i = self.indent(indent)
-        i1 = self.indent(indent+1)
+        ind = self.indent(indent)
+        ind1 = self.indent(indent+1)
 
         name = node.name if node.node.kind in ['operation_definition', 'fragment_definition'] else str(graphql_type)
 
         class_def = CLASS_TEMPLATE.format(name=name, parents=','.join(node.fragments))
         for line in class_def.split(os.linesep):
-            yield i + line
+            yield ind + line
 
         if node.fragments and not node.children:
             # Class has no fields of its own, only derive from fragment
-            yield i1 + 'pass'
+            yield ind1 + 'pass'
         elif node.children:
             for child in node.children:
-                for line in self.__do_render(child, indent=indent + 1):
-                    yield line
+                yield from self.__do_render(child, indent=indent + 1)
 
         yield '\n'
 
@@ -122,5 +118,5 @@ class DataclassesRenderer:
         return mapping if not nullable else f'{mapping} = None'
 
     @staticmethod
-    def indent(n: int):
-        return ' ' * 4 * n
+    def indent(count: int):
+        return ' ' * 4 * count

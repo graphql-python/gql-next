@@ -9,13 +9,13 @@ def load_introspection_from_server(url):
     request = requests.post(url, json={'query': query})
     if request.status_code == 200:
         return request.json()['data']
-    else:
-        raise Exception(f'Query failed to run by returning code of {request.status_code}. {query}')
+
+    raise Exception(f'Query failed to run by returning code of {request.status_code}. {query}')
 
 
 def load_introspection_from_file(filename):
-    with open(filename, 'r') as f:
-        return json.load(f)
+    with open(filename, 'r') as fin:
+        return json.load(fin)
 
 
 def load_schema(uri):

@@ -85,8 +85,8 @@ def run(config_filename):
     if not isfile(config_filename):
         click.echo(f'Could not find configuration file {config_filename}')
 
-    with open(config_filename, 'r') as f:
-        config = yaml.load(f)
+    with open(config_filename, 'r') as fin:
+        config = yaml.load(fin)
 
     schema = load_schema(config['schema'])
     # print(schema.type_map)

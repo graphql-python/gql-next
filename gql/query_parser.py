@@ -27,46 +27,46 @@ class FieldToTypeMatcherVisitor(Visitor):
 
     # Document
     def enter_operation_definition(self, node, *_args):
-        name, op, selection_set = node.name, node.operation, node.selection_set
+        name, operation = node.name, node.operation
         op_name = name.value
-        name = f'{op.value.capitalize()}{op_name}Response'
+        name = f'{operation.value.capitalize()}{op_name}Response'
 
         operation_root = MappingNode(node=node, name=name)
         self.root.append(operation_root)
         self.current = operation_root
         return node
 
-    def enter_selection_set(self, node, key, parent, path, ancestors):
+    def enter_selection_set(self, node, *_):
         self.current = self.current.children[-1] if self.current.children else self.current
         return node
 
-    def leave_selection_set(self, node, key, parent, path, ancestors):
+    def leave_selection_set(self, node, *_):
         self.current = self.current.parent
         return node
 
     # Fragments
 
-    def enter_fragment_definition(self, node, *_args):
+    def enter_fragment_definition(self, node, *_):
         # Same as operation definition
         fragment = MappingNode(node=node, name=node.name.value)
         self.root.append(fragment)
         self.current = fragment
         return node
 
-    def enter_fragment_spread(self, node, key, parent, path, ancestors):
+    def enter_fragment_spread(self, node, *_):
         self.current.fragments.append(node.name.value)
         return node
 
-    def enter_inline_fragment(self, node, key, parent, path, ancestors):
-        return node
+    # def enter_inline_fragment(self, node, *_):
+    #     return node
 
-    def leave_inline_fragment(self, node, key, parent, path, ancestors):
+    def leave_inline_fragment(self, node, *_):
         self.current = self.current.children[-1] if self.current.children else self.current
         return node
 
     # Field
 
-    def enter_field(self, node, key, parent, path, ancestors):
+    def enter_field(self, node, *_):
         name = node.alias.value if node.alias else node.name.value
         type_ = self.type_info.get_type()
         new_node = MappingNode(node=node, name=name, graphql_type=type_, parent=self.current)
