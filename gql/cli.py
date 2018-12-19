@@ -1,13 +1,12 @@
 import click
 import glob
-import os
 import time
-from fnmatch import fnmatchcase
+import os
 from os.path import join as join_paths, isfile
 
 from graphql import GraphQLSchema
 from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler, EVENT_TYPE_DELETED, EVENT_TYPE_CREATED, EVENT_TYPE_MODIFIED
+from watchdog.events import FileSystemEventHandler, EVENT_TYPE_CREATED, EVENT_TYPE_MODIFIED
 
 from gql.config import Config
 from gql.query_parser import QueryParser, AnonymousQueryError, InvalidQueryError
@@ -54,7 +53,7 @@ def init(schema, root, config_filename):
 
 
 def process_file(filename: str, parser: QueryParser, renderer: DataclassesRenderer):
-    root, ext = os.path.splitext(filename)
+    root, _s = os.path.splitext(filename)
     target_filename = root + '.py'
 
     click.echo(f'Parsing {filename} ... ', nl=False)
@@ -105,15 +104,17 @@ def watch(config_filename):
 
         def on_any_event(self, event):
             if event.is_directory:
-                return None
+                return
 
             if event.event_type in {EVENT_TYPE_CREATED, EVENT_TYPE_MODIFIED}:
                 filenames = [os.path.abspath(fn) for fn in glob.iglob(config.documents, recursive=True)]
                 if event.src_path not in filenames:
-                    return None
+                    return
 
                 # Take any action here when a file is first created.
                 process_file(event.src_path, self.parser, self.renderer)
+
+
 
     if not isfile(config_filename):
         click.echo(f'Could not find configuration file {config_filename}')
