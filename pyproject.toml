@@ -16,6 +16,7 @@ inflection = "^0.3.1"
 dataclasses-json = "^0.2.0"
 
 aiohttp = {version = "^3.4", optional = true}
+watchdog = "^0.9.0"
 
 [tool.poetry.extras]
 async = ["aiohttp"]
