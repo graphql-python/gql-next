@@ -114,8 +114,6 @@ def watch(config_filename):
                 # Take any action here when a file is first created.
                 process_file(event.src_path, self.parser, self.renderer)
 
-
-
     if not isfile(config_filename):
         click.echo(f'Could not find configuration file {config_filename}')
 
