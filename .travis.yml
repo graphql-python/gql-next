@@ -8,6 +8,6 @@ install:
   - poetry install -E async
 # command to run tests
 script:
-  - poetry run pylint ./gql --output-format=parseable
-  - poetry run pytest --cov=gql
+  - make lint
+  - make test
 after_success: coveralls
