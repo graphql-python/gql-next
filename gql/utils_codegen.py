@@ -16,11 +16,11 @@ class CodeGenerator:
             self.level -= 1
 
     @property
-    def indent_string(self):
+    def indent_str(self):
         return self.level * SPACES
 
     def write(self, value: str, *args, **kwargs):
-        value = self.indent_string + value
+        value = self.indent_str + value
         if args or kwargs:
             value = value.format(*args, **kwargs)
 
@@ -28,7 +28,7 @@ class CodeGenerator:
 
     def write_lines(self, lines):
         for line in lines:
-            self.lines.append(self.indent_string + line)
+            self.lines.append(self.indent_str + line)
 
     def __add__(self, value: str):
         self.write(value)
