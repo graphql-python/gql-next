@@ -11,11 +11,9 @@ FILE_HEADER = """
 from typing import Any, Callable, Mapping
 from dataclasses import dataclass
 from dataclasses_json import dataclass_json
-
 from gql.clients import Client, AsyncIOClient
 
 {custom_header}
-
 """
 
 OPERATION_TEMPLATE = """

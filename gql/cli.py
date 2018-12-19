@@ -1,10 +1,15 @@
 import click
+import glob
+import os
+from functools import partial
 from os.path import join as join_paths, isfile
 
 from gql.config import Config
-from gql.query_parser import QueryParser
+from gql.query_parser import QueryParser, AnonymousQueryError, InvalidQueryError
 from gql.renderer_dataclasses import DataclassesRenderer
 from gql.utils_schema import load_schema
+
+
 
 SCHEMA_PROMPT = click.style('Where is your schema?: ', fg='bright_white') + \
                 click.style('(path or url) ', fg='bright_black', dim=False)
@@ -42,33 +47,33 @@ def run(config_filename):
         click.echo(f'Could not find configuration file {config_filename}')
 
     config = Config.load(config_filename)
-
     schema = load_schema(config.schema)
 
-    query = """
-    query MyQuery {
-      products: snapshots(app: EDC, snapshotType: PRODUCT) {
-        pageInfo {
-          endCursor
-          hasNextPage
-        }
-        edges {
-          node {
-            ... on Product {
-              id
-              name
-            }
-          }
-        }
-      }
-    }
-    """
+    filenames = glob.glob(config.documents, recursive=True)
 
     query_parser = QueryParser(schema)
     query_renderer = DataclassesRenderer(schema, config)
 
-    parsed = query_parser.parse(query)
-    print(query_renderer.render(parsed))
+    for filename in filenames:
+        root, ext = os.path.splitext(filename)
+        target_filename = root + '.py'
+
+        click.echo(f'Parsing {filename} ... ', nl=False)
+        with open(filename, 'r') as fin:
+            query = fin.read()
+            try:
+                parsed = query_parser.parse(query)
+                rendered = query_renderer.render(parsed)
+            except AnonymousQueryError:
+                click.secho('Failed!', fg='bright_red')
+                click.secho('\tQuery is missing a name', fg='bright_black')
+            except InvalidQueryError as invalid_err:
+                click.secho('Failed!', fg='bright_red')
+                click.secho(f'\t{invalid_err}', fg='bright_black')
+
+            with open(target_filename, 'w') as outfile:
+                outfile.write(rendered)
+                click.secho('Success!', fg='bright_white')
 
 
 if __name__ == '__main__':
