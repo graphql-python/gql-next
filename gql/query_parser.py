@@ -113,7 +113,7 @@ class QueryParser:
         document_ast = parse(query)
         operation = get_operation_ast(document_ast)
 
-        if not operation.name.value:
+        if not operation.name:
             raise AnonymousQueryError()
 
         if should_validate:
