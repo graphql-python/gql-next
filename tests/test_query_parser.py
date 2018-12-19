@@ -1,5 +1,5 @@
 import pytest
-from gql.query_parser import QueryParser
+from gql.query_parser import QueryParser, AnonymousQueryError, InvalidQueryError
 
 
 def test_document_parser_fails_on_nameless_op(swapi_schema):
@@ -20,13 +20,13 @@ def test_document_parser_fails_on_nameless_op(swapi_schema):
 
     parser = QueryParser(swapi_schema)
 
-    with pytest.raises(Exception):
+    with pytest.raises(AnonymousQueryError):
         parser.parse(query)
 
 
 def test_document_parser_fails_invalid_query(swapi_schema):
     query = """
-        {
+        query ShouldFail {
           allFilms {
             totalCount
             edges {
@@ -41,8 +41,10 @@ def test_document_parser_fails_invalid_query(swapi_schema):
 
     parser = QueryParser(swapi_schema)
 
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidQueryError) as excinfo:
         parser.parse(query)
+
+    print(str(excinfo))
 
 
 def test_document_parse_fragments(swapi_schema):

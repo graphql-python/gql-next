@@ -1,7 +1,7 @@
 from typing import List, AnyStr
 from dataclasses import dataclass, field
 
-from graphql import GraphQLSchema, parse, get_operation_ast, visit, Visitor, TypeInfo, TypeInfoVisitor, GraphQLType
+from graphql import GraphQLSchema, validate, parse, get_operation_ast, visit, Visitor, TypeInfo, TypeInfoVisitor, GraphQLType
 from graphql.language import ast
 
 
@@ -92,20 +92,36 @@ class FieldToTypeMatcherVisitor(Visitor):
         return None
 
 
+class AnonymousQueryError(Exception):
+    def __init__(self):
+        super().__init__('All queries must be named')
+
+
+class InvalidQueryError(Exception):
+    def __init__(self, errors):
+        self.errors = errors
+        message = '\n'.join(str(err) for err in errors)
+        super().__init__(message)
+
+
 class QueryParser:
     def __init__(self, schema: GraphQLSchema):
         self.schema = schema
         self.__jinja2_env = None
 
-    def parse(self, query: str) -> ParsedQuery:
+    def parse(self, query: str, should_validate: bool = True) -> ParsedQuery:
         document_ast = parse(query)
         operation = get_operation_ast(document_ast)
 
         if not operation.name.value:
-            raise Exception('All queries must be named')
+            raise AnonymousQueryError()
+
+        if should_validate:
+            errors = validate(self.schema, document_ast)
+            if errors:
+                raise InvalidQueryError(errors)
 
         type_info = TypeInfo(self.schema)
-
         visitor = FieldToTypeMatcherVisitor(type_info, query)
         visit(document_ast, TypeInfoVisitor(type_info, visitor))
         result = ParsedQuery(query=query, parsed=visitor.root)
