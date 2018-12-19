@@ -38,6 +38,29 @@ def test_codegen_write_template_strings_kwargs(module_compiler):
     assert m.sum(2, 3) == 5
 
 
+def test_codegen_block(module_compiler):
+    gen = CodeGenerator()
+    gen.write('def sum(a, b):')
+    with gen.block():
+        gen.write('return a + b')
+
+    code = str(gen)
+
+    m = module_compiler(code)
+    assert m.sum(2, 3) == 5
+
+
+def test_codegen_write_block(module_compiler):
+    gen = CodeGenerator()
+    with gen.write_block('def {name}(a, b):', name='sum'):
+        gen.write('return a + b')
+
+    code = str(gen)
+
+    m = module_compiler(code)
+    assert m.sum(2, 3) == 5
+
+
 def test_codegen_write_lines(module_compiler):
     lines = [
         '@staticmethod',
