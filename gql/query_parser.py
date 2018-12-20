@@ -77,6 +77,7 @@ class FieldToTypeMatcherVisitor(Visitor):
         name = node.alias.value if node.alias else node.name.value
         type_ = self.type_info.get_type()
         new_node = MappingNode(query=self.query, node=node, name=name, graphql_type=type_, parent=self.current)
+        # TODO: Nullable fields should go to the end
         self.current.children.append(new_node)
         return node
 
