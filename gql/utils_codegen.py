@@ -13,7 +13,7 @@ class CodeChunk:
             return self.gen
 
         def __exit__(self, exc_type, exc_val, exc_tb):
-            self.gen.undent()
+            self.gen.unindent()
 
     def __init__(self):
         self.lines = []
@@ -22,7 +22,7 @@ class CodeChunk:
     def indent(self):
         self.level += 1
 
-    def undent(self):
+    def unindent(self):
         if self.level > 0:
             self.level -= 1
 
