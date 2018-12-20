@@ -3,9 +3,9 @@ import os
 SPACES = ' ' * 4
 
 
-class CodeGenerator:
+class CodeChunk:
     class Block:
-        def __init__(self, codegen: 'CodeGenerator'):
+        def __init__(self, codegen: 'CodeChunk'):
             self.gen = codegen
 
         def __enter__(self):
