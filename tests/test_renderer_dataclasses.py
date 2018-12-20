@@ -135,7 +135,7 @@ def test_simple_query_with_variables(swapi_dataclass_renderer, swapi_parser, mod
     assert data.returnOfTheJedi.director == 'George Lucas'
 
 
-def test_query_with_fragment(swapi_parser, swapi_dataclass_renderer, module_compiler):
+def test_simple_query_with_fragment(swapi_parser, swapi_dataclass_renderer, module_compiler):
     """
 
         @dataclass_json
@@ -201,7 +201,7 @@ def test_query_with_fragment(swapi_parser, swapi_dataclass_renderer, module_comp
     assert data.returnOfTheJedi.openingCrawl == 'la la la'
 
 
-def test_query_with_complex_fragment(swapi_parser, swapi_dataclass_renderer, module_compiler):
+def test_simple_query_with_complex_fragment(swapi_parser, swapi_dataclass_renderer, module_compiler):
     """
         ```
         @dataclass_json
@@ -275,7 +275,7 @@ def test_query_with_complex_fragment(swapi_parser, swapi_dataclass_renderer, mod
     assert data.luke.home.name == 'Arakis'
 
 
-def test_query_with_complex_inline_fragment(swapi_parser, swapi_dataclass_renderer, module_compiler):
+def test_simple_query_with_complex_inline_fragment(swapi_parser, swapi_dataclass_renderer, module_compiler):
     """
     '''
         @dataclass_json

@@ -3,7 +3,18 @@ import os
 SPACES = ' ' * 4
 
 
-class CodeGenerator:
+class CodeChunk:
+    class Block:
+        def __init__(self, codegen: 'CodeChunk'):
+            self.gen = codegen
+
+        def __enter__(self):
+            self.gen.indent()
+            return self.gen
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self.gen.unindent()
+
     def __init__(self):
         self.lines = []
         self.level = 0
@@ -11,7 +22,7 @@ class CodeGenerator:
     def indent(self):
         self.level += 1
 
-    def undent(self):
+    def unindent(self):
         if self.level > 0:
             self.level -= 1
 
@@ -29,6 +40,13 @@ class CodeGenerator:
     def write_lines(self, lines):
         for line in lines:
             self.lines.append(self.indent_string + line)
+
+    def block(self):
+        return self.Block(self)
+
+    def write_block(self, block_header: str, *args, **kwargs):
+        self.write(block_header, *args, **kwargs)
+        return self.block()
 
     def __add__(self, value: str):
         self.write(value)
