@@ -1,7 +1,5 @@
-import os
-from typing import cast, Union
-from graphql import GraphQLSchema, GraphQLWrappingType, GraphQLNonNull, OperationDefinitionNode, NonNullTypeNode, \
-    NamedTypeNode, TypeNode
+from typing import cast
+from graphql import GraphQLSchema, GraphQLWrappingType, GraphQLNonNull, OperationDefinitionNode, NonNullTypeNode, TypeNode
 
 from gql.config import Config
 from gql.utils_codegen import CodeGenerator
@@ -122,7 +120,6 @@ class DataclassesRenderer:
             else:
                 # Class has no fields of its own, only derive from fragment
                 buffer.write('pass')
-
 
     @staticmethod
     def __scalar_type_to_python(scalar, default=None):
