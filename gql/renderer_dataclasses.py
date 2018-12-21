@@ -61,7 +61,6 @@ class DataclassesRenderer:
 
         buffer.write(f'{node.name}: {field_typename}')
 
-
     def __render_operation(self, buffer: CodeChunk, node: MappingNode):
         assert node.node.kind == 'operation_definition'
         graphql_node = cast(OperationDefinitionNode, node.node)
