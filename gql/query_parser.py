@@ -1,27 +1,62 @@
-from typing import List, AnyStr
+from typing import Any, List, Union
 from dataclasses import dataclass, field
 
-from graphql import GraphQLSchema, validate, parse, get_operation_ast, visit, Visitor, TypeInfo, TypeInfoVisitor, GraphQLType
+from graphql import GraphQLSchema, validate, parse, get_operation_ast, visit, Visitor, TypeInfo, TypeInfoVisitor, \
+    GraphQLType, GraphQLNonNull, is_scalar_type, GraphQLList, OperationDefinitionNode, NonNullTypeNode, TypeNode
 from graphql.language import ast
 
+# Example Output:
+# model = {
+#     'objects': [
+#         {
+#             'name': 'Car',
+#             'methods': [
+#                 {'name': 'GoVroom', 'arguments': [{'type': 'int', 'name': 'noiseLevel'}]},
+#                 {'name': 'Stop', 'arguments': [{'type': 'bool', 'name': 'fast'}, {'type': 'bool', 'name': 'hard'}]}
+#             ]
+#         },
+#         {
+#             'name': 'Nothing',
+#             'methods': [{'name': 'DoNothing', 'arguments': []}]
+#         }
+#     ]
+# }
 
 @dataclass
-class MappingNode:
-    query: str
-    node: ast.Node
+class ParsedField:
     name: str
-    graphql_type: GraphQLType = None
-    parent: 'MappingNode' = None
-    children: List['MappingNode'] = field(default_factory=list)
-    fragments: List[AnyStr] = field(default_factory=list)
+    type: str
+    nullable: bool
+    default_value: Any = None
 
-    def __repr__(self):
-        return f'{self.name} ({self.graphql_type})'
+@dataclass
+class ParsedObject:
+    name: str
+    fields: List[ParsedField] = field(default_factory=list)
+    parents: List[str] = field(default_factory=list)
+    children: List['ParsedObject'] = field(default_factory=list)
+
+@dataclass
+class ParsedVariableDefinition:
+    name: str
+    type: str
+    nullable: bool
+    default_value: Any = None
+
+@dataclass
+class ParsedOperation:
+    name: str
+    type: str
+    variables: List[ParsedVariableDefinition]  = field(default_factory=list)
+    children: List[ParsedObject] = field(default_factory=list)
+
+
+NodeT = Union[ParsedOperation, ParsedObject]
 
 @dataclass
 class ParsedQuery:
     query: str
-    parsed: List[MappingNode]
+    objects: List[NodeT] = field(default_factory=list)
 
 
 class FieldToTypeMatcherVisitor(Visitor):
@@ -29,68 +64,147 @@ class FieldToTypeMatcherVisitor(Visitor):
     def __init__(self, type_info: TypeInfo, query: str):
         self.type_info = type_info
         self.query = query
-        self.root: List[MappingNode] = []
-        self.current: MappingNode = None
+        self.parsed = ParsedQuery(query=self.query)
+        self.dfs_path: List[ParsedObject] = []
+
+    def push(self, obj: NodeT):
+        self.dfs_path.append(obj)
+
+    def pull(self) -> NodeT:
+        if self.dfs_path:
+            return self.dfs_path.pop()
+
+        return None
+
+    @property
+    def current(self) -> ParsedObject:
+        return self.dfs_path[-1]
 
     # Document
-    def enter_operation_definition(self, node, *_args):
+    def enter_operation_definition(self, node: OperationDefinitionNode, *_args):
         name, operation = node.name, node.operation
-        op_name = name.value
-        name = f'{operation.value.capitalize()}{op_name}Response'
 
-        operation_root = MappingNode(query=self.query, node=node, name=name)
-        self.root.append(operation_root)
-        self.current = operation_root
+        variables =[]
+        for var in node.variable_definitions:
+            ptype, nullable, scalar = self.__variable_type_to_python(var.type)
+            variables.append(ParsedVariableDefinition(
+                name=var.variable.name.value,
+                type=ptype,
+                nullable=nullable,
+                default_value=var.default_value.value if var.default_value else None,
+            ))
+
+        op = ParsedOperation(
+            name=name.value,
+            type=str(operation.value),
+            variables=variables,
+            children=[
+                ParsedObject(
+                    name=f'{name.value}Data'
+                )
+            ]
+        )
+
+        self.parsed.objects.append(op)
+        self.push(op)
+        self.push(op.children[0])
+
         return node
 
     def enter_selection_set(self, node, *_):
-        self.current = self.current.children[-1] if self.current.children else self.current
         return node
 
     def leave_selection_set(self, node, *_):
-        self.current = self.current.parent
+        self.pull()
         return node
 
     # Fragments
 
     def enter_fragment_definition(self, node, *_):
         # Same as operation definition
-        fragment = MappingNode(query=self.query, node=node, name=node.name.value)
-        self.root.append(fragment)
-        self.current = fragment
+        obj = ParsedObject(
+            name=node.name.value
+        )
+        self.parsed.objects.append(obj)
+        self.push(obj)
         return node
 
     def enter_fragment_spread(self, node, *_):
-        self.current.fragments.append(node.name.value)
+        self.current.parents.append(node.name.value)
         return node
 
-    # def enter_inline_fragment(self, node, *_):
-    #     return node
+    def enter_inline_fragment(self, node, *_):
+        return node
 
     def leave_inline_fragment(self, node, *_):
-        self.current = self.current.children[-1] if self.current.children else self.current
         return node
 
     # Field
 
     def enter_field(self, node, *_):
         name = node.alias.value if node.alias else node.name.value
-        type_ = self.type_info.get_type()
-        new_node = MappingNode(query=self.query, node=node, name=name, graphql_type=type_, parent=self.current)
-        # TODO: Nullable fields should go to the end
-        self.current.children.append(new_node)
+        graphql_type = self.type_info.get_type()
+        python_type, nullable, underlying_graphql_type = self.__scalar_type_to_python(graphql_type)
+
+        field = ParsedField(
+            name=name,
+            type=python_type,
+            nullable=nullable,
+        )
+
+        self.current.fields.append(field)  # TODO: nullables should go to the end
+
+        if not is_scalar_type(underlying_graphql_type):
+            obj = ParsedObject(
+                name=str(underlying_graphql_type)
+            )
+            self.current.children.append(obj)
+            self.push(obj)
+
         return node
 
-    def __find_node(self, node: ast.Node, current: MappingNode):
-        if current.node == node:
-            return current
+    @staticmethod
+    def __scalar_type_to_python(scalar):
+        nullable = True
+        if isinstance(scalar, GraphQLNonNull):
+            nullable = False
+            scalar = scalar.of_type
 
-        for child in current.children:
-            result = self.__find_node(node, child)
-            if result:
-                return result
+        mapping = {
+            'ID': 'str',
+            'String': 'str',
+            'Int': 'int',
+            'Float': 'float',
+            'Boolean': 'bool',
+            'DateTime': 'str'  # TODO: add config for custom mapping of scalar -> custom python type
+        }
 
-        return None
+        if isinstance(scalar, GraphQLList):
+            scalar = scalar.of_type
+            mapping = f'List[{mapping.get(str(scalar), str(scalar))}]'
+        else:
+            mapping = mapping.get(str(scalar), str(scalar))
+
+        return mapping, nullable, scalar
+
+    @staticmethod
+    def __variable_type_to_python(var_type: TypeNode):
+        nullable = True
+        if isinstance(var_type, NonNullTypeNode):
+            nullable = False
+            var_type = var_type.type
+
+        mapping = {
+            'ID': 'str',
+            'String': 'str',
+            'Int': 'int',
+            'Float': 'float',
+            'Boolean': 'bool',
+            'DateTime': 'str'  # TODO: add config for custom mapping of scalar -> custom python type
+        }
+
+        mapping = mapping.get(var_type.name.value, var_type.name.value)
+        return mapping, nullable, var_type
 
 
 class AnonymousQueryError(Exception):
@@ -125,5 +239,5 @@ class QueryParser:
         type_info = TypeInfo(self.schema)
         visitor = FieldToTypeMatcherVisitor(type_info, query)
         visit(document_ast, TypeInfoVisitor(type_info, visitor))
-        result = ParsedQuery(query=query, parsed=visitor.root)
+        result = visitor.parsed
         return result

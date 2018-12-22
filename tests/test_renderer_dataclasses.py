@@ -8,35 +8,6 @@ def swapi_dataclass_renderer(swapi_schema):
 
 
 def test_simple_query(swapi_dataclass_renderer, swapi_parser, module_compiler):
-    """
-    Expect code to render:
-    ```
-        @dataclass_json
-        @dataclass(frozen=True)
-        class QueryGetFilm:
-
-
-            @dataclass_json
-            @dataclass(frozen=True)
-            class QueryGetFilmResponse():
-
-
-                @dataclass_json
-                @dataclass(frozen=True)
-                class Film():
-
-                    title: str
-                    director: str
-
-
-                returnOfTheJedi: Film = None
-
-
-            data: QueryGetFilmResponse = None
-            errors: Any = None
-    ```
-    """
-
     query = """
         query GetFilm {
           returnOfTheJedi: film(id: "1") {
@@ -50,7 +21,7 @@ def test_simple_query(swapi_dataclass_renderer, swapi_parser, module_compiler):
     rendered = swapi_dataclass_renderer.render(parsed)
 
     m = module_compiler(rendered)
-    response = m.QueryGetFilm.from_json("""
+    response = m.GetFilm.from_json("""
     {
         "data": {
             "returnOfTheJedi": {
@@ -69,37 +40,6 @@ def test_simple_query(swapi_dataclass_renderer, swapi_parser, module_compiler):
 
 
 def test_simple_query_with_variables(swapi_dataclass_renderer, swapi_parser, module_compiler, mocker):
-    """
-    ```
-        @dataclass_json
-        @dataclass(frozen=True)
-        class QueryGetFilm:
-
-
-            @dataclass_json
-            @dataclass(frozen=True)
-            class QueryGetFilmResponse():
-
-
-                @dataclass_json
-                @dataclass(frozen=True)
-                class Film():
-
-                    title: str
-                    director: str
-
-
-                returnOfTheJedi: Film = None
-
-
-            data: QueryGetFilmResponse = None
-            errors: Any = None
-
-            @classmethod
-            def execute(cls, id: str):
-                pass
-    ```
-    """
     query = """
         query GetFilm($id: ID!) {
           returnOfTheJedi: film(id: $id) {
@@ -126,9 +66,9 @@ def test_simple_query_with_variables(swapi_dataclass_renderer, swapi_parser, mod
        }
     """
 
-    result = m.QueryGetFilm.execute('luke')
+    result = m.GetFilm.execute('luke')
     assert result
-    assert isinstance(result, m.QueryGetFilm)
+    assert isinstance(result, m.GetFilm)
 
     data = result.data
     assert data.returnOfTheJedi.title == 'Return of the Jedi'
@@ -136,32 +76,6 @@ def test_simple_query_with_variables(swapi_dataclass_renderer, swapi_parser, mod
 
 
 def test_simple_query_with_fragment(swapi_parser, swapi_dataclass_renderer, module_compiler):
-    """
-
-        @dataclass_json
-        @dataclass(frozen=True)
-        class FilmFields():
-            title: str
-            director: str
-
-        @dataclass_json
-        @dataclass(frozen=True)
-        class QueryGetFilm:
-
-            @dataclass_json
-            @dataclass(frozen=True)
-            class QueryGetFilmResponse():
-
-                @dataclass_json
-                @dataclass(frozen=True)
-                class Film(FilmFields):
-                    openingCrawl: str
-
-                returnOfTheJedi: Film = None
-
-            data: QueryGetFilmResponse = None
-            errors: Any = None
-    """
     query = """
         query GetFilm {
           returnOfTheJedi: film(id: "1") {
@@ -181,7 +95,7 @@ def test_simple_query_with_fragment(swapi_parser, swapi_dataclass_renderer, modu
     rendered = swapi_dataclass_renderer.render(parsed)
 
     m = module_compiler(rendered)
-    response = m.QueryGetFilm.from_json("""
+    response = m.GetFilm.from_json("""
     {
         "data": {
             "returnOfTheJedi": {
@@ -202,39 +116,6 @@ def test_simple_query_with_fragment(swapi_parser, swapi_dataclass_renderer, modu
 
 
 def test_simple_query_with_complex_fragment(swapi_parser, swapi_dataclass_renderer, module_compiler):
-    """
-        ```
-        @dataclass_json
-        @dataclass(frozen=True)
-        class CharacterFields():
-            name: str
-
-            @dataclass_json
-            @dataclass(frozen=True)
-            class Planet():
-                name: str
-
-            home: Planet
-
-        @dataclass_json
-        @dataclass(frozen=True)
-        class QueryGetPerson:
-
-            @dataclass_json
-            @dataclass(frozen=True)
-            class QueryGetFilmResponse():
-
-                @dataclass_json
-                @dataclass(frozen=True)
-                class Person(CharacterFields):
-                    pass
-
-                luke: Person = None
-
-            data: QueryGetFilmResponse = None
-            errors: Any = None
-        ```
-    """
     query = """
         query GetPerson {
           luke: character(id: "luke") {
@@ -255,7 +136,7 @@ def test_simple_query_with_complex_fragment(swapi_parser, swapi_dataclass_render
     rendered = swapi_dataclass_renderer.render(parsed)
 
     m = module_compiler(rendered)
-    response = m.QueryGetPerson.from_json("""
+    response = m.GetPerson.from_json("""
     {
         "data": {
             "luke": {
@@ -276,34 +157,6 @@ def test_simple_query_with_complex_fragment(swapi_parser, swapi_dataclass_render
 
 
 def test_simple_query_with_complex_inline_fragment(swapi_parser, swapi_dataclass_renderer, module_compiler):
-    """
-    '''
-        @dataclass_json
-        @dataclass(frozen=True)
-        class QueryGetPerson:
-
-            @dataclass_json
-            @dataclass(frozen=True)
-            class QueryGetPersonResponse():
-
-                @dataclass_json
-                @dataclass(frozen=True)
-                class Person():
-                    name: str
-
-                    @dataclass_json
-                    @dataclass(frozen=True)
-                    class Planet():
-                        name: str
-
-                    home: Planet
-
-                luke: Person = None
-
-            data: QueryGetPersonResponse = None
-            errors: Any = None
-    '''
-    """
     query = """
         query GetPerson {
           luke: character(id: "luke") {
@@ -321,7 +174,7 @@ def test_simple_query_with_complex_inline_fragment(swapi_parser, swapi_dataclass
     rendered = swapi_dataclass_renderer.render(parsed)
 
     m = module_compiler(rendered)
-    response = m.QueryGetPerson.from_json("""
+    response = m.GetPerson.from_json("""
         {
             "data": {
                 "luke": {

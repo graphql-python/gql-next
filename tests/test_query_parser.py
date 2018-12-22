@@ -1,8 +1,10 @@
 import pytest
-from gql.query_parser import QueryParser, AnonymousQueryError, InvalidQueryError
+from deepdiff import DeepDiff
+from dataclasses import asdict
+from gql.query_parser import QueryParser, ParsedQuery, ParsedOperation, ParsedObject, ParsedField, ParsedVariableDefinition, AnonymousQueryError, InvalidQueryError
 
 
-def test_document_parser_fails_on_nameless_op(swapi_schema):
+def test_parser_fails_on_nameless_op(swapi_schema):
     query = """
         {
           allFilms {
@@ -24,7 +26,7 @@ def test_document_parser_fails_on_nameless_op(swapi_schema):
         parser.parse(query)
 
 
-def test_document_parser_fails_invalid_query(swapi_schema):
+def test_parser_fails_invalid_query(swapi_schema):
     query = """
         query ShouldFail {
           allFilms {
@@ -47,36 +49,274 @@ def test_document_parser_fails_invalid_query(swapi_schema):
     print(str(excinfo))
 
 
-def test_document_parse_fragments(swapi_schema):
-    """
-    Expected result would be something like this:
-
-    ```
-    from typing import List
-    from dataclasses import dataclass
-
-    @dataclass
-    class QueryGetAllFilmsResponse:
-        @dataclass
-        class AllFilms:
-
-            @dataclass
-            class Edge:
-                @dataclass
-                class Node:
-                    id: str
-                    title: str
-                    director: str
-
-                node: Node
-
-            totalCount: int
-            edges: List[Edge]
-
-        allFilms: AllFilms
-    ```
+def test_parser_query(swapi_schema):
+    query = """
+        query GetFilm {
+          returnOfTheJedi: film(id: "1") {
+            title
+            director
+          }
+        }
     """
 
+    parser = QueryParser(swapi_schema)
+    parsed = parser.parse(query)
+
+    expected = asdict(ParsedQuery(
+        query=query,
+        objects=[
+            ParsedOperation(
+                name='GetFilm',
+                type='query',
+                children=[
+                    ParsedObject(
+                        name='GetFilmData',
+                        fields=[
+                            ParsedField(name='returnOfTheJedi', type='Film', nullable=True)
+                        ],
+                        children=[
+                            ParsedObject(
+                                name='Film',
+                                fields=[
+                                    ParsedField(name='title', type='str', nullable=False),
+                                    ParsedField(name='director', type='str', nullable=False),
+                                ]
+                            )
+                        ]
+                    )
+                ]
+            )
+        ]
+    ))
+
+    parsed_dict = asdict(parsed)
+
+    assert bool(parsed)
+    assert parsed_dict == expected, str(DeepDiff(parsed_dict, expected))
+
+
+def test_parser_query_inline_fragment(swapi_schema):
+    query = """
+        query GetFilm {
+          returnOfTheJedi: film(id: "1") {
+            ... on Film {
+                title
+                director
+            }
+          }
+        }
+    """
+
+    parser = QueryParser(swapi_schema)
+    parsed = parser.parse(query)
+
+    expected = asdict(ParsedQuery(
+        query=query,
+        objects=[
+            ParsedOperation(
+                name='GetFilm',
+                type='query',
+                children=[
+                    ParsedObject(
+                        name='GetFilmData',
+                        fields=[
+                            ParsedField(name='returnOfTheJedi', type='Film', nullable=True)
+                        ],
+                        children=[
+                            ParsedObject(
+                                name='Film',
+                                fields=[
+                                    ParsedField(name='title', type='str', nullable=False),
+                                    ParsedField(name='director', type='str', nullable=False),
+                                ]
+                            )
+                        ],
+                    )
+                ]
+            )
+        ]
+    ))
+
+    parsed_dict = asdict(parsed)
+
+    assert bool(parsed)
+    assert parsed_dict == expected, str(DeepDiff(parsed_dict, expected))
+
+
+def test_parser_query_fragment(swapi_schema):
+    query = """
+        query GetFilm {
+          returnOfTheJedi: film(id: "1") {
+            id
+            ...FilmFields
+          }
+        }
+
+        fragment FilmFields on Film {
+            title
+            director
+        }
+    """
+
+    parser = QueryParser(swapi_schema)
+    parsed = parser.parse(query)
+
+    expected = asdict(ParsedQuery(
+        query=query,
+        objects=[
+            ParsedOperation(
+                name='GetFilm',
+                type='query',
+                children=[
+                    ParsedObject(
+                        name='GetFilmData',
+                        fields=[
+                            ParsedField(name='returnOfTheJedi', type='Film', nullable=True)
+                        ],
+                        children=[
+                            ParsedObject(
+                                name='Film',
+                                parents=['FilmFields'],
+                                fields=[
+                                    ParsedField(name='id', type='str', nullable=False),
+                                ]
+                            )
+                        ],
+                    ),
+                ]
+            ),
+            ParsedObject(
+                name='FilmFields',
+                fields=[
+                    ParsedField(name='title', type='str', nullable=False),
+                    ParsedField(name='director', type='str', nullable=False),
+                ],
+            )
+        ]
+    ))
+
+    parsed_dict = asdict(parsed)
+
+    assert bool(parsed)
+    assert parsed_dict == expected, str(DeepDiff(parsed_dict, expected))
+
+
+def test_parser_query_complex_fragment(swapi_schema):
+    query = """
+            query GetPerson {
+              luke: character(id: "luke") {
+                ...CharacterFields
+              }
+            }
+
+            fragment CharacterFields on Person {
+                name
+
+                home: homeworld {
+                    name
+                }
+            }
+        """
+
+    parser = QueryParser(swapi_schema)
+    parsed = parser.parse(query)
+
+    expected = asdict(ParsedQuery(
+        query=query,
+        objects=[
+            ParsedOperation(
+                name='GetPerson',
+                type='query',
+                children=[
+                    ParsedObject(
+                        name='GetPersonData',
+                        fields=[
+                            ParsedField(name='luke', type='Person', nullable=True)
+                        ],
+                        children=[
+                            ParsedObject(
+                                name='Person',
+                                parents=['CharacterFields'],
+                                fields=[]
+                            )
+                        ],
+                    ),
+                ]
+            ),
+            ParsedObject(
+                name='CharacterFields',
+                fields=[
+                    ParsedField(name='name', type='str', nullable=False),
+                    ParsedField(name='home', type='Planet', nullable=False),
+                ],
+                children=[
+                    ParsedObject(
+                        name='Planet',
+                        fields=[
+                            ParsedField(name='name', type='str', nullable=False),
+                        ]
+                    )
+                ]
+            )
+        ]
+    ))
+
+    parsed_dict = asdict(parsed)
+
+    assert bool(parsed)
+    assert parsed_dict == expected, str(DeepDiff(parsed_dict, expected))
+
+
+def test_parser_query_with_variables(swapi_schema):
+    query = """
+        query GetFilm($theFilmID: ID!) {
+          returnOfTheJedi: film(id: $theFilmID) {
+            title
+            director
+          }
+        }
+    """
+
+    parser = QueryParser(swapi_schema)
+    parsed = parser.parse(query)
+
+    expected = asdict(ParsedQuery(
+        query=query,
+        objects=[
+            ParsedOperation(
+                name='GetFilm',
+                type='query',
+                variables=[
+                    ParsedVariableDefinition(name='theFilmID', type='str', nullable=False)
+                ],
+                children=[
+                    ParsedObject(
+                        name='GetFilmData',
+                        fields=[
+                            ParsedField(name='returnOfTheJedi', type='Film', nullable=True)
+                        ],
+                        children=[
+                            ParsedObject(
+                                name='Film',
+                                fields=[
+                                    ParsedField(name='title', type='str', nullable=False),
+                                    ParsedField(name='director', type='str', nullable=False),
+                                ]
+                            )
+                        ]
+                    )
+                ]
+            )
+        ]
+    ))
+
+    parsed_dict = asdict(parsed)
+
+    assert bool(parsed)
+    assert parsed_dict == expected, str(DeepDiff(parsed_dict, expected))
+
+
+def test_connection_query(swapi_schema):
     query = """
         query GetAllFilms {
           allFilms {
@@ -102,41 +342,89 @@ def test_document_parse_fragments(swapi_schema):
             id
             name
         }
+
     """
 
     parser = QueryParser(swapi_schema)
-    result = parser.parse(query)
-    parsed = result.parsed
-    assert len(parsed) == 2
-    assert parsed[0].name == 'QueryGetAllFilmsResponse'
-    assert parsed[1].name == 'HeroFields'
+    parsed = parser.parse(query)
 
-    first_level = parsed[0].children
-    assert first_level[0].name == 'allFilms' and first_level[0].graphql_type.name == 'FilmConnection'
-    assert first_level[0].children
+    expected = asdict(ParsedQuery(
+        query=query,
+        objects=[
+            ParsedOperation(
+                name='GetAllFilms',
+                type='query',
+                children=[
+                    ParsedObject(
+                        name='GetAllFilmsData',
+                        fields=[
+                            ParsedField(name='allFilms', type='FilmConnection', nullable=True),
+                            ParsedField(name='allHeroes', type='HeroConnection', nullable=True)
+                        ],
+                        children=[
+                            ParsedObject(
+                                name='FilmConnection',
+                                fields=[
+                                    ParsedField(name='count', type='int', nullable=True),
+                                    ParsedField(name='edges', type='List[FilmEdge]', nullable=True),
+                                ],
+                                children=[
+                                    ParsedObject(
+                                        name='FilmEdge',
+                                        fields=[
+                                            ParsedField(name='node', type='Film', nullable=True)
+                                        ],
+                                        children=[
+                                            ParsedObject(
+                                                name='Film',
+                                                fields=[
+                                                    ParsedField(name='id', type='str', nullable=False),
+                                                    ParsedField(name='title', type='str', nullable=False),
+                                                    ParsedField(name='director', type='str', nullable=False)
+                                                ]
+                                            )
+                                        ]
+                                    )
 
-    sec_level = first_level[0].children
-    assert len(sec_level) == 2
-    assert sec_level[0].name == 'count' and sec_level[0].graphql_type.name == 'Int'
-    assert sec_level[1].name == 'edges' and sec_level[1].graphql_type.of_type.name == 'FilmEdge'
+                                ]
+                            ),
+                            ParsedObject(
+                                name='HeroConnection',
+                                fields=[
+                                    ParsedField(name='edges', type='List[HeroEdge]', nullable=True),
+                                ],
+                                children=[
+                                    ParsedObject(
+                                        name='HeroEdge',
+                                        fields=[
+                                            ParsedField(name='node', type='Hero', nullable=True)
+                                        ],
+                                        children=[
+                                            ParsedObject(
+                                                name='Hero',
+                                                parents=['HeroFields'],
+                                                fields=[]
+                                            )
+                                        ]
+                                    )
 
-    node = sec_level[1].children[0]
-    assert node
-    assert node.graphql_type.name == 'Film'
-    assert len(node.children) == 3
-    assert node.children[0].name == 'id' and node.children[0].graphql_type.of_type.name == 'ID'
-    assert node.children[1].name == 'title' and node.children[1].graphql_type.of_type.name == 'String'
-    assert node.children[2].name == 'director' and node.children[2].graphql_type.of_type.name == 'String'
+                                ]
+                            ),
+                        ],
+                    ),
+                ]
+            ),
+            ParsedObject(
+                name='HeroFields',
+                fields=[
+                    ParsedField(name='id', type='str', nullable=False),
+                    ParsedField(name='name', type='str', nullable=False),
+                ],
+            )
+        ]
+    ))
 
-    assert first_level[1].name == 'allHeroes' and first_level[1].graphql_type.name == 'HeroConnection'
+    parsed_dict = asdict(parsed)
 
-    sec_level = first_level[1].children
-    assert len(sec_level) == 1
-    assert sec_level[0].name == 'edges'
-
-    node = sec_level[0].children[0]
-    assert node
-    assert node.graphql_type.name == 'Hero'
-
-    assert len(node.children) == 0
-    assert 'HeroFields' in node.fragments
+    assert bool(parsed)
+    assert parsed_dict == expected, str(DeepDiff(parsed_dict, expected))
