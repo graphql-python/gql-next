@@ -1,8 +1,8 @@
-from typing import List, Union
+from typing import Any, List, Union
 from dataclasses import dataclass, field
 
 from graphql import GraphQLSchema, validate, parse, get_operation_ast, visit, Visitor, TypeInfo, TypeInfoVisitor, \
-    GraphQLType, GraphQLNonNull, is_scalar_type, GraphQLList
+    GraphQLType, GraphQLNonNull, is_scalar_type, GraphQLList, OperationDefinitionNode, NonNullTypeNode, TypeNode
 from graphql.language import ast
 
 # Example Output:
@@ -27,7 +27,7 @@ class ParsedField:
     name: str
     type: str
     nullable: bool
-    default_value: str = None
+    default_value: Any = None
 
 @dataclass
 class ParsedObject:
@@ -41,7 +41,7 @@ class ParsedVariableDefinition:
     name: str
     type: str
     nullable: bool
-    default_value: str = None
+    default_value: Any = None
 
 @dataclass
 class ParsedOperation:
@@ -81,12 +81,23 @@ class FieldToTypeMatcherVisitor(Visitor):
         return self.dfs_path[-1]
 
     # Document
-    def enter_operation_definition(self, node, *_args):
+    def enter_operation_definition(self, node: OperationDefinitionNode, *_args):
         name, operation = node.name, node.operation
+
+        variables =[]
+        for var in node.variable_definitions:
+            ptype, nullable, scalar = self.__variable_type_to_python(var.type)
+            variables.append(ParsedVariableDefinition(
+                name=var.variable.name.value,
+                type=ptype,
+                nullable=nullable,
+                default_value=var.default_value.value if var.default_value else None,
+            ))
 
         op = ParsedOperation(
             name=name.value,
-            type=operation.value,
+            type=str(operation.value),
+            variables=variables,
             children=[
                 ParsedObject(
                     name=f'{name.value}Data'
@@ -175,6 +186,25 @@ class FieldToTypeMatcherVisitor(Visitor):
             mapping = mapping.get(str(scalar), str(scalar))
 
         return mapping, nullable, scalar
+
+    @staticmethod
+    def __variable_type_to_python(var_type: TypeNode):
+        nullable = True
+        if isinstance(var_type, NonNullTypeNode):
+            nullable = False
+            var_type = var_type.type
+
+        mapping = {
+            'ID': 'str',
+            'String': 'str',
+            'Int': 'int',
+            'Float': 'float',
+            'Boolean': 'bool',
+            'DateTime': 'str'  # TODO: add config for custom mapping of scalar -> custom python type
+        }
+
+        mapping = mapping.get(var_type.name.value, var_type.name.value)
+        return mapping, nullable, var_type
 
 
 class AnonymousQueryError(Exception):

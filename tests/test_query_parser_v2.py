@@ -1,7 +1,7 @@
 import pytest
 from deepdiff import DeepDiff
 from dataclasses import asdict
-from gql.query_parser_v2 import QueryParser, ParsedQuery, ParsedOperation, ParsedObject, ParsedField, AnonymousQueryError, InvalidQueryError
+from gql.query_parser_v2 import QueryParser, ParsedQuery, ParsedOperation, ParsedObject, ParsedField, ParsedVariableDefinition, AnonymousQueryError, InvalidQueryError
 
 
 def test_parser_fails_on_nameless_op(swapi_schema):
@@ -89,8 +89,10 @@ def test_parser_query(swapi_schema):
         ]
     ))
 
+    parsed_dict = asdict(parsed)
+
     assert bool(parsed)
-    assert asdict(parsed) == expected, str(DeepDiff(parsed_dict, expected))
+    assert parsed_dict == expected, str(DeepDiff(parsed_dict, expected))
 
 
 def test_parser_query_inline_fragment(swapi_schema):
@@ -135,8 +137,10 @@ def test_parser_query_inline_fragment(swapi_schema):
         ]
     ))
 
+    parsed_dict = asdict(parsed)
+
     assert bool(parsed)
-    assert asdict(parsed) == expected, str(DeepDiff(parsed_dict, expected))
+    assert parsed_dict == expected, str(DeepDiff(parsed_dict, expected))
 
 
 def test_parser_query_fragment(swapi_schema):
@@ -191,8 +195,10 @@ def test_parser_query_fragment(swapi_schema):
         ]
     ))
 
+    parsed_dict = asdict(parsed)
+
     assert bool(parsed)
-    assert asdict(parsed) == expected
+    assert parsed_dict == expected, str(DeepDiff(parsed_dict, expected))
 
 
 def test_parser_query_complex_fragment(swapi_schema):
@@ -255,8 +261,59 @@ def test_parser_query_complex_fragment(swapi_schema):
         ]
     ))
 
+    parsed_dict = asdict(parsed)
+
     assert bool(parsed)
-    assert asdict(parsed) == expected, str(DeepDiff(parsed_dict, expected))
+    assert parsed_dict == expected, str(DeepDiff(parsed_dict, expected))
+
+
+def test_parser_query_with_variables(swapi_schema):
+    query = """
+        query GetFilm($theFilmID: ID!) {
+          returnOfTheJedi: film(id: $theFilmID) {
+            title
+            director
+          }
+        }
+    """
+
+    parser = QueryParser(swapi_schema)
+    parsed = parser.parse(query)
+
+    expected = asdict(ParsedQuery(
+        query=query,
+        objects=[
+            ParsedOperation(
+                name='GetFilm',
+                type='query',
+                variables=[
+                    ParsedVariableDefinition(name='theFilmID', type='str', nullable=False)
+                ],
+                children=[
+                    ParsedObject(
+                        name='GetFilmData',
+                        fields=[
+                            ParsedField(name='returnOfTheJedi', type='Film', nullable=True)
+                        ],
+                        children=[
+                            ParsedObject(
+                                name='Film',
+                                fields=[
+                                    ParsedField(name='title', type='str', nullable=False),
+                                    ParsedField(name='director', type='str', nullable=False),
+                                ]
+                            )
+                        ]
+                    )
+                ]
+            )
+        ]
+    ))
+
+    parsed_dict = asdict(parsed)
+
+    assert bool(parsed)
+    assert parsed_dict == expected, str(DeepDiff(parsed_dict, expected))
 
 
 def test_connection_query(swapi_schema):
