@@ -2,25 +2,8 @@ from typing import Any, List, Union
 from dataclasses import dataclass, field
 
 from graphql import GraphQLSchema, validate, parse, get_operation_ast, visit, Visitor, TypeInfo, TypeInfoVisitor, \
-    GraphQLType, GraphQLNonNull, is_scalar_type, GraphQLList, OperationDefinitionNode, NonNullTypeNode, TypeNode
-from graphql.language import ast
+    GraphQLNonNull, is_scalar_type, GraphQLList, OperationDefinitionNode, NonNullTypeNode, TypeNode
 
-# Example Output:
-# model = {
-#     'objects': [
-#         {
-#             'name': 'Car',
-#             'methods': [
-#                 {'name': 'GoVroom', 'arguments': [{'type': 'int', 'name': 'noiseLevel'}]},
-#                 {'name': 'Stop', 'arguments': [{'type': 'bool', 'name': 'fast'}, {'type': 'bool', 'name': 'hard'}]}
-#             ]
-#         },
-#         {
-#             'name': 'Nothing',
-#             'methods': [{'name': 'DoNothing', 'arguments': []}]
-#         }
-#     ]
-# }
 
 @dataclass
 class ParsedField:
@@ -47,7 +30,7 @@ class ParsedVariableDefinition:
 class ParsedOperation:
     name: str
     type: str
-    variables: List[ParsedVariableDefinition]  = field(default_factory=list)
+    variables: List[ParsedVariableDefinition] = field(default_factory=list)
     children: List[ParsedObject] = field(default_factory=list)
 
 
@@ -84,9 +67,9 @@ class FieldToTypeMatcherVisitor(Visitor):
     def enter_operation_definition(self, node: OperationDefinitionNode, *_args):
         name, operation = node.name, node.operation
 
-        variables =[]
+        variables = []
         for var in node.variable_definitions:
-            ptype, nullable, scalar = self.__variable_type_to_python(var.type)
+            ptype, nullable, _ = self.__variable_type_to_python(var.type)
             variables.append(ParsedVariableDefinition(
                 name=var.variable.name.value,
                 type=ptype,
@@ -94,25 +77,23 @@ class FieldToTypeMatcherVisitor(Visitor):
                 default_value=var.default_value.value if var.default_value else None,
             ))
 
-        op = ParsedOperation(
+        parsed_op = ParsedOperation(
             name=name.value,
             type=str(operation.value),
             variables=variables,
             children=[
-                ParsedObject(
-                    name=f'{name.value}Data'
-                )
+                ParsedObject(name=f'{name.value}Data')
             ]
         )
 
-        self.parsed.objects.append(op)
-        self.push(op)
-        self.push(op.children[0])
+        self.parsed.objects.append(parsed_op)  # pylint:disable=no-member
+        self.push(parsed_op)
+        self.push(parsed_op.children[0])  # pylint:disable=unsubscriptable-object
 
         return node
 
-    def enter_selection_set(self, node, *_):
-        return node
+    # def enter_selection_set(self, node, *_):
+    #     return node
 
     def leave_selection_set(self, node, *_):
         self.pull()
@@ -125,7 +106,7 @@ class FieldToTypeMatcherVisitor(Visitor):
         obj = ParsedObject(
             name=node.name.value
         )
-        self.parsed.objects.append(obj)
+        self.parsed.objects.append(obj)  # pylint:disable=no-member
         self.push(obj)
         return node
 
@@ -133,11 +114,11 @@ class FieldToTypeMatcherVisitor(Visitor):
         self.current.parents.append(node.name.value)
         return node
 
-    def enter_inline_fragment(self, node, *_):
-        return node
-
-    def leave_inline_fragment(self, node, *_):
-        return node
+    # def enter_inline_fragment(self, node, *_):
+    #     return node
+    #
+    # def leave_inline_fragment(self, node, *_):
+    #     return node
 
     # Field
 
@@ -146,13 +127,13 @@ class FieldToTypeMatcherVisitor(Visitor):
         graphql_type = self.type_info.get_type()
         python_type, nullable, underlying_graphql_type = self.__scalar_type_to_python(graphql_type)
 
-        field = ParsedField(
+        parsed_field = ParsedField(
             name=name,
             type=python_type,
             nullable=nullable,
         )
 
-        self.current.fields.append(field)  # TODO: nullables should go to the end
+        self.current.fields.append(parsed_field)  # TODO: nullables should go to the end
 
         if not is_scalar_type(underlying_graphql_type):
             obj = ParsedObject(

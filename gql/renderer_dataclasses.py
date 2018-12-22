@@ -1,5 +1,4 @@
-from typing import cast
-from graphql import GraphQLSchema, GraphQLWrappingType, GraphQLNonNull, OperationDefinitionNode, NonNullTypeNode, TypeNode
+from graphql import GraphQLSchema
 
 from gql.config import Config
 from gql.utils_codegen import CodeChunk
@@ -58,29 +57,29 @@ class DataclassesRenderer:
             for field in sorted_fields:
                 self.__render_field(buffer, field)
 
-    def __render_operation(self, parsed_query: ParsedQuery, buffer: CodeChunk, op: ParsedOperation):
+    def __render_operation(self, parsed_query: ParsedQuery, buffer: CodeChunk, parsed_op: ParsedOperation):
         buffer.write('@dataclass_json')
         buffer.write('@dataclass')
-        with buffer.write_block(f'class {op.name}:'):
+        with buffer.write_block(f'class {parsed_op.name}:'):
             buffer.write('__QUERY__ = """')
             buffer.write(parsed_query.query)
             buffer.write('"""')
             buffer.write('')
 
             # Render children
-            for child_object in op.children:
+            for child_object in parsed_op.children:
                 self.__render_object(parsed_query, buffer, child_object)
 
             # operation fields
             buffer.write('')
-            buffer.write(f'data: {op.name}Data = None')
+            buffer.write(f'data: {parsed_op.name}Data = None')
             buffer.write('errors: Any = None')
             buffer.write('')
 
             # Execution functions
-            if op.variables:
-                vars_args = ', '.join([self.__render_variable_definition(var) for var in op.variables]) + ','
-                variables_dict = '{' + ', '.join(f'"{var.name}": {var.name}' for var in op.variables) + '}'
+            if parsed_op.variables:
+                vars_args = ', '.join([self.__render_variable_definition(var) for var in parsed_op.variables]) + ','
+                variables_dict = '{' + ', '.join(f'"{var.name}": {var.name}' for var in parsed_op.variables) + '}'
             else:
                 vars_args = ''
                 variables_dict = 'None'
@@ -102,13 +101,15 @@ class DataclassesRenderer:
             buffer.write('')
             buffer.write('')
 
-    def __render_variable_definition(self, var: ParsedVariableDefinition):
+    @staticmethod
+    def __render_variable_definition(var: ParsedVariableDefinition):
         if not var.nullable:
             return f'{var.name}: {var.type}'
 
         return f'{var.name}: {var.type} = {var.default_value or "None"}'
 
-    def __render_field(self, buffer: CodeChunk, field: ParsedField):
+    @staticmethod
+    def __render_field(buffer: CodeChunk, field: ParsedField):
         if field.nullable:
             buffer.write(f'{field.name}: {field.type} = {field.default_value}')
         else:
