@@ -54,10 +54,7 @@ class FieldToTypeMatcherVisitor(Visitor):
         self.dfs_path.append(obj)
 
     def pull(self) -> NodeT:
-        if self.dfs_path:
-            return self.dfs_path.pop()
-
-        return None
+        return self.dfs_path.pop()
 
     @property
     def current(self) -> ParsedObject:
