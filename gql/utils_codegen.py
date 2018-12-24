@@ -48,8 +48,5 @@ class CodeChunk:
         self.write(block_header, *args, **kwargs)
         return self.block()
 
-    def __add__(self, value: str):
-        self.write(value)
-
     def __str__(self):
         return os.linesep.join(self.lines)
