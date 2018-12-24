@@ -1,7 +1,7 @@
 import pytest
 from deepdiff import DeepDiff
 from dataclasses import asdict
-from gql.query_parser import QueryParser, ParsedQuery, ParsedOperation, ParsedObject, ParsedField, ParsedVariableDefinition, AnonymousQueryError, InvalidQueryError
+from gql.query_parser import QueryParser, ParsedQuery, ParsedOperation, ParsedObject, ParsedEnum, ParsedField, ParsedVariableDefinition, AnonymousQueryError, InvalidQueryError
 
 
 def test_parser_fails_on_nameless_op(swapi_schema):
@@ -428,6 +428,90 @@ def test_parser_connection_query(swapi_schema):
 
     assert bool(parsed)
     assert parsed_dict == expected, str(DeepDiff(parsed_dict, expected))
+
+
+def test_parser_query_with_enums(github_parser, module_compiler):
+    query = """
+        query MyIssues {
+          viewer {
+            issues(first: 5) {
+              edges {
+                node {
+                  author { login }
+                  authorAssociation
+                }
+              }
+            }
+          }
+        }
+    """
+    parsed = github_parser.parse(query)
+
+    expected = asdict(ParsedQuery(
+        query=query,
+        enums=[
+            ParsedEnum(name='CommentAuthorAssociation', values={'MEMBER': 'MEMBER', 'OWNER': 'OWNER', 'COLLABORATOR': 'COLLABORATOR', 'CONTRIBUTOR': 'CONTRIBUTOR', 'FIRST_TIME_CONTRIBUTOR': 'FIRST_TIME_CONTRIBUTOR', 'FIRST_TIMER': 'FIRST_TIMER', 'NONE': 'NONE'})
+        ],
+        objects=[
+            ParsedOperation(
+                name='MyIssues',
+                type='query',
+                children=[
+                    ParsedObject(
+                        name='MyIssuesData',
+                        fields=[
+                            ParsedField(name='viewer', type='User', nullable=False)
+                        ],
+                        children=[
+                            ParsedObject(
+                                name='User',
+                                fields=[
+                                    ParsedField(name='issues', type='IssueConnection', nullable=False)
+                                ],
+                                children=[
+                                    ParsedObject(
+                                        name='IssueConnection',
+                                        fields=[ParsedField(name='edges', type='List[IssueEdge]', nullable=True)],
+                                        children=[
+                                            ParsedObject(
+                                                name='IssueEdge',
+                                                fields=[ParsedField(name='node', type='Issue', nullable=True)],
+                                                children=[
+                                                    ParsedObject(
+                                                        name='Issue',
+                                                        fields=[
+                                                            ParsedField(name='author', type='Actor', nullable=True),
+                                                            ParsedField(name='authorAssociation', type='CommentAuthorAssociation', nullable=False)
+                                                        ],
+                                                        children=[
+                                                            ParsedObject(
+                                                                name='Actor',
+                                                                fields=[
+                                                                    ParsedField(name='login', type='str', nullable=False)
+                                                                ]
+                                                            )
+                                                        ]
+                                                    )
+                                                ]
+                                            )
+                                        ]
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+                ]
+            )
+        ]
+    ))
+
+    parsed_dict = asdict(parsed)
+
+    assert bool(parsed)
+    assert parsed_dict == expected, str(DeepDiff(parsed_dict, expected))
+
+
+
 
 
 def test_parser_mutation(swapi_schema):
