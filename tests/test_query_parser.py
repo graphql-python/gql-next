@@ -316,7 +316,7 @@ def test_parser_query_with_variables(swapi_schema):
     assert parsed_dict == expected, str(DeepDiff(parsed_dict, expected))
 
 
-def test_connection_query(swapi_schema):
+def test_parser_connection_query(swapi_schema):
     query = """
         query GetAllFilms {
           allFilms {
@@ -420,6 +420,62 @@ def test_connection_query(swapi_schema):
                     ParsedField(name='id', type='str', nullable=False),
                     ParsedField(name='name', type='str', nullable=False),
                 ],
+            )
+        ]
+    ))
+
+    parsed_dict = asdict(parsed)
+
+    assert bool(parsed)
+    assert parsed_dict == expected, str(DeepDiff(parsed_dict, expected))
+
+
+def test_parser_mutation(swapi_schema):
+    query = """
+        mutation CreateHero {
+          createHero {
+            hero {
+              name
+            }
+            ok
+          }
+        }
+    """
+
+    parser = QueryParser(swapi_schema)
+    parsed = parser.parse(query)
+
+    expected = asdict(ParsedQuery(
+        query=query,
+        objects=[
+            ParsedOperation(
+                name='CreateHero',
+                type='mutation',
+                children=[
+                    ParsedObject(
+                        name='CreateHeroData',
+                        fields=[
+                            ParsedField(name='createHero', type='CreateHeroPayload', nullable=True)
+                        ],
+                        children=[
+                            ParsedObject(
+                                name='CreateHeroPayload',
+                                fields=[
+                                    ParsedField(name='hero', type='Hero', nullable=True),
+                                    ParsedField(name='ok', type='bool', nullable=True)
+                                ],
+                                children=[
+                                    ParsedObject(
+                                        name='Hero',
+                                        fields=[
+                                            ParsedField(name='name', type='str', nullable=False)
+                                        ]
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+                ]
             )
         ]
     ))
