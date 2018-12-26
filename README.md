@@ -29,6 +29,9 @@ Then go to your project folder and run `gql init`
 
 ### The `gql` client
 
+#### `gql init`
+Initializes a project to use GQL as client - writes a .gql.json configuration file.
+
 #### `gql run`
 
 Run through your project's files and compile GraphQL queries into into Python types.
