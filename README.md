@@ -26,7 +26,7 @@ Then go to your project folder and run `gql init`
 ## Quick Start
 
 `gql` works by parsing query files (`**/*.graphql` by default) into their own Python module where 
-a class who's name is the same as your query allows you to make that query and get a typed
+an class, named after the operation defined in the file, allows you to make that query and get a typed
 response.
 
 For example, given the following file `get_film.graphql` file:
@@ -100,6 +100,9 @@ from .get_film import GetFilm
 
 result: GetFlim.GetFilmData = GetFilm.execute('1')
 ```
+
+*Important notes:*
+* Operations defined in graphql query __must be named__ so that we can name the relevant Python Class which you can then import in your code
 
 
 ## How it works
