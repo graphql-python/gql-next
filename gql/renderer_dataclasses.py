@@ -34,6 +34,8 @@ class DataclassesRenderer:
 
         buffer.write('')
 
+        self.__render_datetime_field(buffer)
+
         # Enums
         if parsed_query.enums:
             self.__render_enum_field(buffer)
@@ -61,6 +63,14 @@ class DataclassesRenderer:
             buffer.write('')
             buffer.write("return field(metadata={'dataclasses_json': {'encoder': encode_enum, 'decoder': partial(decode_enum, enum_type)}})")
             buffer.write('')
+
+    @staticmethod
+    def __render_datetime_field(buffer: CodeChunk):
+        buffer.write('')
+        buffer.write('from datetime import datetime')
+        buffer.write('from marshmallow import fields as marshmallow_fields')
+        buffer.write("DATETIME_FIELD = field(metadata={'dataclasses_json': {'encoder': datetime.isoformat, 'decoder': datetime.fromisoformat, 'mm_field': marshmallow_fields.DateTime(format='iso')}})")
+        buffer.write('')
 
     def __render_object(self, parsed_query: ParsedQuery, buffer: CodeChunk, obj: ParsedObject):
         buffer.write('@dataclass_json')
@@ -135,6 +145,10 @@ class DataclassesRenderer:
         is_enum = field.type in enum_names
         if is_enum:
             buffer.write(f'{field.name}: {field.type} = enum_field({field.type})')
+            return
+
+        if field.type == 'DateTime':
+            buffer.write(f'{field.name}: datetime = DATETIME_FIELD')
             return
 
         if field.nullable:
