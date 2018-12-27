@@ -1,4 +1,4 @@
-from graphql import GraphQLSchema, GraphQLEnumType
+from graphql import GraphQLSchema
 
 from gql.config import Config
 from gql.utils_codegen import CodeChunk
