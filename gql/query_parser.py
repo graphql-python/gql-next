@@ -1,8 +1,9 @@
-from typing import Any, List, Union
+from typing import Any, List, Mapping, Union, cast
 from dataclasses import dataclass, field
 
 from graphql import GraphQLSchema, validate, parse, get_operation_ast, visit, Visitor, TypeInfo, TypeInfoVisitor, \
-    GraphQLNonNull, is_scalar_type, GraphQLList, OperationDefinitionNode, NonNullTypeNode, TypeNode
+    GraphQLNonNull, is_scalar_type, GraphQLList, OperationDefinitionNode, NonNullTypeNode, TypeNode, GraphQLEnumType, \
+    is_enum_type
 
 
 @dataclass
@@ -12,6 +13,7 @@ class ParsedField:
     nullable: bool
     default_value: Any = None
 
+
 @dataclass
 class ParsedObject:
     name: str
@@ -19,12 +21,20 @@ class ParsedObject:
     parents: List[str] = field(default_factory=list)
     children: List['ParsedObject'] = field(default_factory=list)
 
+
+@dataclass
+class ParsedEnum:
+    name: str
+    values: Mapping[str, Any]
+
+
 @dataclass
 class ParsedVariableDefinition:
     name: str
     type: str
     nullable: bool
     default_value: Any = None
+
 
 @dataclass
 class ParsedOperation:
@@ -36,15 +46,18 @@ class ParsedOperation:
 
 NodeT = Union[ParsedOperation, ParsedObject]
 
+
 @dataclass
 class ParsedQuery:
     query: str
     objects: List[NodeT] = field(default_factory=list)
+    enums: List[ParsedEnum] = field(default_factory=list)
 
 
 class FieldToTypeMatcherVisitor(Visitor):
 
-    def __init__(self, type_info: TypeInfo, query: str):
+    def __init__(self, schema: GraphQLSchema, type_info: TypeInfo, query: str):
+        self.schema = schema
         self.type_info = type_info
         self.query = query
         self.parsed = ParsedQuery(query=self.query)
@@ -133,11 +146,22 @@ class FieldToTypeMatcherVisitor(Visitor):
         self.current.fields.append(parsed_field)  # TODO: nullables should go to the end
 
         if not is_scalar_type(underlying_graphql_type):
-            obj = ParsedObject(
-                name=str(underlying_graphql_type)
-            )
-            self.current.children.append(obj)
-            self.push(obj)
+            if is_enum_type(underlying_graphql_type):
+                enum_type = cast(GraphQLEnumType, self.schema.type_map[underlying_graphql_type.name])
+                name = enum_type.name
+                if not any(e.name == name for e in self.parsed.enums):  # pylint:disable=not-an-iterable
+                    parsed_enum = ParsedEnum(
+                        name=enum_type.name,
+                        values={name: value.value or name for name, value in enum_type.values.items()}
+                    )
+                    self.parsed.enums.append(parsed_enum)  # pylint:disable=no-member
+            else:
+                obj = ParsedObject(
+                    name=str(underlying_graphql_type)
+                )
+
+                self.current.children.append(obj)
+                self.push(obj)
 
         return node
 
@@ -215,7 +239,7 @@ class QueryParser:
                 raise InvalidQueryError(errors)
 
         type_info = TypeInfo(self.schema)
-        visitor = FieldToTypeMatcherVisitor(type_info, query)
+        visitor = FieldToTypeMatcherVisitor(self.schema, type_info, query)
         visit(document_ast, TypeInfoVisitor(type_info, visitor))
         result = visitor.parsed
         return result
