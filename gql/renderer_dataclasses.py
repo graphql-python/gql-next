@@ -1,5 +1,4 @@
-from typing import cast
-from graphql import GraphQLSchema, GraphQLEnumType, GraphQLEnumValue
+from graphql import GraphQLSchema, GraphQLEnumType
 
 from gql.config import Config
 from gql.utils_codegen import CodeChunk
@@ -114,15 +113,17 @@ class DataclassesRenderer:
 
         return f'{var.name}: {var.type} = {var.default_value or "None"}'
 
-    def __render_field(self, buffer: CodeChunk, field: ParsedField):
+    @staticmethod
+    def __render_field(buffer: CodeChunk, field: ParsedField):
         if field.nullable:
             buffer.write(f'{field.name}: {field.type} = {field.default_value}')
         else:
             buffer.write(f'{field.name}: {field.type}')
 
-    def __render_enum(self, buffer: CodeChunk, enum: GraphQLEnumType):
+    @staticmethod
+    def __render_enum(buffer: CodeChunk, enum: GraphQLEnumType):
         with buffer.write_block(f'class {enum.name}(Enum):'):
-            for value_name, value in enum.values.items:
+            for value_name, value in enum.values.items():
                 if value.description:
                     buffer.write(f'# {value.description}')
 

@@ -149,12 +149,12 @@ class FieldToTypeMatcherVisitor(Visitor):
             if is_enum_type(underlying_graphql_type):
                 enum_type = cast(GraphQLEnumType, self.schema.type_map[underlying_graphql_type.name])
                 name = enum_type.name
-                if not any(e.name == name for e in self.parsed.enums):
+                if not any(e.name == name for e in self.parsed.enums):  # pylint:disable=not-an-iterable
                     parsed_enum = ParsedEnum(
                         name=enum_type.name,
                         values={name: value.value or name for name, value in enum_type.values.items()}
                     )
-                    self.parsed.enums.append(parsed_enum)
+                    self.parsed.enums.append(parsed_enum)  # pylint:disable=no-member
             else:
                 obj = ParsedObject(
                     name=str(underlying_graphql_type)
