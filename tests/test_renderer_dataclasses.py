@@ -1,4 +1,5 @@
 import pytest
+from datetime import datetime
 from dataclasses import field
 from gql.config import Config
 from gql.renderer_dataclasses import DataclassesRenderer
@@ -243,3 +244,44 @@ def test_simple_query_with_enums(github_parser, github_dataclass_renderer, modul
     assert node
     assert node.author.login == 'whatever'
     assert node.authorAssociation == m.CommentAuthorAssociation.FIRST_TIMER
+
+
+def test_simple_query_with_datetime(swapi_dataclass_renderer, swapi_parser, module_compiler, mocker):
+    query = """
+        query GetFilm($id: ID!) {
+          returnOfTheJedi: film(id: $id) {
+            title
+            director
+            releaseDate
+          }
+        }
+    """
+
+    parsed = swapi_parser.parse(query)
+    rendered = swapi_dataclass_renderer.render(parsed)
+
+    m = module_compiler(rendered)
+
+    now = datetime.now()
+
+    call_mock = mocker.patch.object(m.Client, 'call')
+    call_mock.return_value = """
+       {
+           "data": {
+               "returnOfTheJedi": {
+                   "title": "Return of the Jedi",
+                   "director": "George Lucas",
+                   "releaseDate": "%s"
+               }
+           }
+       }
+    """ % now.isoformat()
+
+    result = m.GetFilm.execute('luke')
+    assert result
+    assert isinstance(result, m.GetFilm)
+
+    data = result.data
+    assert data.returnOfTheJedi.title == 'Return of the Jedi'
+    assert data.returnOfTheJedi.director == 'George Lucas'
+    assert data.returnOfTheJedi.releaseDate == now

@@ -178,7 +178,7 @@ class FieldToTypeMatcherVisitor(Visitor):
             'Int': 'int',
             'Float': 'float',
             'Boolean': 'bool',
-            'DateTime': 'str'  # TODO: add config for custom mapping of scalar -> custom python type
+            'DateTime': 'DateTime'
         }
 
         if isinstance(scalar, GraphQLList):
@@ -202,7 +202,7 @@ class FieldToTypeMatcherVisitor(Visitor):
             'Int': 'int',
             'Float': 'float',
             'Boolean': 'bool',
-            'DateTime': 'str'  # TODO: add config for custom mapping of scalar -> custom python type
+            'DateTime': 'DateTime'
         }
 
         mapping = mapping.get(var_type.name.value, var_type.name.value)
