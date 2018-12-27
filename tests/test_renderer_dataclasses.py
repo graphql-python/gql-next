@@ -1,9 +1,14 @@
 import pytest
+from dataclasses import field
 from gql.config import Config
 from gql.renderer_dataclasses import DataclassesRenderer
 
 @pytest.fixture
 def swapi_dataclass_renderer(swapi_schema):
+    return DataclassesRenderer(swapi_schema, Config(schema='schemaurl', documents=''))
+
+@pytest.fixture
+def github_dataclass_renderer(swapi_schema):
     return DataclassesRenderer(swapi_schema, Config(schema='schemaurl', documents=''))
 
 
@@ -192,3 +197,49 @@ def test_simple_query_with_complex_inline_fragment(swapi_parser, swapi_dataclass
     data = response.data
     assert data.luke.name == 'Luke Skywalker'
     assert data.luke.home.name == 'Arakis'
+
+
+def test_simple_query_with_enums(github_parser, github_dataclass_renderer, module_compiler):
+    query = """
+        query MyIssues {
+          viewer {
+            issues(first: 5) {
+              edges {
+                node {
+                  author { login }
+                  authorAssociation
+                }
+              }
+            }
+          }
+        }
+    """
+    parsed = github_parser.parse(query)
+    rendered = github_dataclass_renderer.render(parsed)
+
+    m = module_compiler(rendered)
+    response = m.MyIssues.from_json("""
+        {
+            "data": {
+                "viewer": {
+                    "issues": {
+                        "edges": [
+                            {
+                                "node": {
+                                    "author": { "login": "whatever" },
+                                    "authorAssociation": "FIRST_TIMER"
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+        """)
+
+    assert response
+
+    node = response.data.viewer.issues.edges[0].node
+    assert node
+    assert node.author.login == 'whatever'
+    assert node.authorAssociation == m.CommentAuthorAssociation.FIRST_TIMER

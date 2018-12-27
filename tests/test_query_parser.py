@@ -511,9 +511,6 @@ def test_parser_query_with_enums(github_parser, module_compiler):
     assert parsed_dict == expected, str(DeepDiff(parsed_dict, expected))
 
 
-
-
-
 def test_parser_mutation(swapi_schema):
     query = """
         mutation CreateHero {
