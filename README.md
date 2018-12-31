@@ -53,17 +53,6 @@ from gql.clients import Client, AsyncIOClient
 @dataclass_json
 @dataclass
 class GetFilm:
-    __QUERY__ = """
-    
-        query GetFilm($id: ID!) {
-          returnOfTheJedi: film(id: $id) {
-            title
-            director
-          }
-        }
-    
-    """
-    
     @dataclass_json
     @dataclass
     class GetFilmData():
@@ -79,18 +68,12 @@ class GetFilm:
     errors: Any = None
     
     @classmethod
-    def execute(cls, id: str, on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None):
-        client = Client('schemaurl')
-        variables = {"id": id}
-        response_text = client.call(cls.__QUERY__, variables=variables, on_before_callback=on_before_callback)
-        return cls.from_json(response_text)
+    def execute(cls, id: str, on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None) -> GetFilm:
+        ...
 
     @classmethod
-    async def execute_async(cls, id: str, on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None):
-        client = AsyncClient('schemaurl')
-        variables = {"id": id}
-        response_text = await client.call(cls.__QUERY__, variables=variables, on_before_callback=on_before_callback)
-        return cls.from_json(response_text)
+    async def execute_async(cls, id: str, on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None) -> GetFilm:
+        ...
 ```
 
 Allowing you to make the GraphQL query:
