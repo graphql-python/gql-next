@@ -73,7 +73,7 @@ class GetFilm:
             pass
             title: str
             director: str
-        returnOfTheJedi: Film = None
+        film: Film = None
     
     data: GetFilmData = None
     errors: Any = None
@@ -98,7 +98,8 @@ Allowing you to make the GraphQL query:
 ```python
 from .get_film import GetFilm
 
-result: GetFlim.GetFilmData = GetFilm.execute('1')
+result = GetFilm.execute('meaning_of_life')
+film = result.data.film
 ```
 
 *Important notes:*
