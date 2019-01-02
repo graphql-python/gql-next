@@ -1,7 +1,6 @@
 from io import BytesIO
 from tokenize import tokenize, TokenInfo, NL, NEWLINE, ENCODING, NAME, OP
 
-from gql.codec.transform import tokenize_python_stream, untokenize
 from gql.config import Config
 from gql.query_parser import QueryParser
 from gql.renderer_dataclasses import DataclassesRenderer
@@ -78,7 +77,7 @@ def gql_transform(stream: BytesIO):
 
                 op_name = get_renderer().get_operation_class_name(parsed_query)
 
-                transformed_tokens.append(TokenInfo(NAME, op_name, token.start, token.end, token.line))
+                transformed_tokens.append(TokenInfo(NAME, f'{op_name}Namespace.{op_name}', token.start, token.end, token.line))
                 continue
 
         transformed_tokens.append(token)
@@ -91,6 +90,7 @@ def gql_transform(stream: BytesIO):
 def gql_transform_string(input: str):
     stream = BytesIO(input.encode('utf-8'))
     return gql_transform(stream)
+
 
 def untokenize(tokens: [TokenInfo]) -> str:
     parts = []
