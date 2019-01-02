@@ -34,13 +34,13 @@ def get_renderer() -> DataclassesRenderer:
     if 'RENDERER' not in globals():
         schema = get_schema()
         config = get_config()
-        globals()['RENDERER'] = DataclassesRenderer(schema, config, classname_prefix='__')
+        globals()['RENDERER'] = DataclassesRenderer(schema, config, internal_ns=True)
 
     return globals()['RENDERER']
 
 
 def tokenize_python_stream(stream: BytesIO) -> [TokenInfo]:
-    return tokenize(stream.readline, )
+    return tokenize(stream.readline)
 
 
 def tokenize_python_string(value: str) -> [TokenInfo]:

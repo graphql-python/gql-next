@@ -1,23 +1,25 @@
 #!/usr/bin/env python
-import codecs, encodings
+import codecs
+import encodings
 import sys
 from encodings import utf_8
 from io import BytesIO
 
-from gql.codec.transform import gql_transform_string
+from gql.codec.transform import gql_transform, gql_transform_string
 
 
 def gql_decode(input, errors='strict'):
-    return utf_8.decode(gql_transform_string(input), errors)
+    return utf_8.decode(input)
+    # return utf_8.decode(gql_transform_string(input), errors)
 
 
 class GQLIncrementalDecoder(utf_8.IncrementalDecoder):
-    def decode(self, input, final=False):
+    def decode(self, input: bytes, final: bool=False):
         self.buffer += input
         if final:
             buff = self.buffer
             self.buffer = ''
-            return super().decode(gql_transform_string(buff), final=True)
+            return gql_transform(BytesIO(buff))
 
 
 class GQLStreamReader(utf_8.StreamReader):
@@ -27,7 +29,9 @@ class GQLStreamReader(utf_8.StreamReader):
 
 
 def search_function(encoding):
-    if encoding != 'gql': return None
+    if encoding != 'gql':
+        return None
+
     # Assume utf8 encoding
     utf8 = encodings.search_function('utf8')
     return codecs.CodecInfo(
@@ -38,6 +42,7 @@ def search_function(encoding):
         incrementaldecoder=GQLIncrementalDecoder,
         streamreader=GQLStreamReader,
         streamwriter=utf8.streamwriter)
+
 
 codecs.register(search_function)
 
@@ -68,10 +73,12 @@ if __name__ == '__main__':
         import runpy
         runpy.run_module(module, run_name='__main__', alter_sys=True)
     elif mode == 'script':
-        with open(script) as f:
+        with open(script, encoding='gql') as f:
             global __file__
             __file__ = script
             # Use globals as our "locals" dictionary so that something
             # that tries to import __main__ (e.g. the unittest module)
             # will see the right things.
-            exec(f.read() in globals(), globals())
+            code = f.read()
+            print(code)
+            exec(code, globals())

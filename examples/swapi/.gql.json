@@ -1,0 +1,5 @@
+{
+  "schema": "/Users/ekampf/workspace/ebates/innovation/gql/tests/fixtures/swapi-schema.graphql",
+  "documents": "./tests/**/*.gql",
+  "custom_header_exports": ""
+}
