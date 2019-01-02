@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import click
 import glob
 import time
@@ -44,6 +45,7 @@ def init(schema, root, config_filename):
     documents = join_paths(root, '**/*.graphql')
     config = Config(
         schema=schema,
+        endpoint=schema,
         documents=documents
     )
 

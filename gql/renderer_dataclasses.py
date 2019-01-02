@@ -139,14 +139,14 @@ class DataclassesRenderer:
 
             buffer.write('@classmethod')
             with buffer.write_block(f'def execute(cls, {vars_args} on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None):'):
-                buffer.write(f'client = Client(\'{self.config.schema}\')')
+                buffer.write(f'client = Client(\'{self.config.endpoint}\')')
                 buffer.write(f'variables = {variables_dict}')
                 buffer.write('response_text = client.call(cls.__QUERY__, variables=variables, on_before_callback=on_before_callback)')
                 buffer.write('return cls.from_json(response_text)')
 
             buffer.write('@classmethod')
             with buffer.write_block(f'async def execute_async(cls, {vars_args} on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None):'):
-                buffer.write(f'client = AsyncIOClient(\'{self.config.schema}\')')
+                buffer.write(f'client = AsyncIOClient(\'{self.config.endpoint}\')')
                 buffer.write(f'variables = {variables_dict}')
                 buffer.write(f'response_text = await client.call(cls.__QUERY__, variables=variables, on_before_callback=on_before_callback)')
                 buffer.write(f'return cls.from_json(response_text)')

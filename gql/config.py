@@ -9,6 +9,7 @@ ConfigT = TypeVar('ConfigT', bound='ConfigT')
 @dataclass(frozen=True)
 class Config:
     schema: str
+    endpoint: str
     documents: str
     custom_header: str = ''
 
