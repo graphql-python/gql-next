@@ -15,7 +15,7 @@ class Client:
             'Accept-Encoding': 'gzip',
         }
 
-    async def call(self, query,
+    def call(self, query,
                    variables=None,
                    return_json=False,
                    on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None) -> Union[dict, str]:
