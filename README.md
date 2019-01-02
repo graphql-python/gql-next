@@ -107,3 +107,8 @@ This allows you to:
 * Immediately verify query changes you make are valid.
 * Enjoy your IDE's autocomplete features on GraphQL auto-generated objects while developing
 as `watch` will auto-update them as you change queries.
+
+
+# Sponsors
+
+<a href="https://ebates.com"><img src="https://opensource.ebates.com/static/images/ebates-rakuten.svg" width="250"></a>
