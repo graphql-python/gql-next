@@ -13,9 +13,10 @@ CLASS_TEMPLATE = """
 
 class DataclassesRenderer:
 
-    def __init__(self, schema: GraphQLSchema, config: Config):
+    def __init__(self, schema: GraphQLSchema, config: Config, classname_prefix: str = None):
         self.schema = schema
         self.config = config
+        self.classname_prefix = '' or classname_prefix
 
     def render(self, parsed_query: ParsedQuery):
         # We sort fragment nodes to be first and operations to be last because of dependecies
@@ -51,6 +52,14 @@ class DataclassesRenderer:
 
         return str(buffer)
 
+    def get_operation_class_name(self, parsed_query: ParsedQuery):
+        for obj in parsed_query.objects[::-1]:
+            if isinstance(obj, ParsedOperation):
+                return obj.name
+
+        raise Exception('No operation defined')
+
+
     @staticmethod
     def __render_enum_field(buffer: CodeChunk):
         with buffer.write_block('def enum_field(enum_type):'):
@@ -75,7 +84,7 @@ class DataclassesRenderer:
     def __render_object(self, parsed_query: ParsedQuery, buffer: CodeChunk, obj: ParsedObject):
         buffer.write('@dataclass_json')
         buffer.write('@dataclass')
-        with buffer.write_block(f'class {obj.name}({", ".join(obj.parents)}):'):
+        with buffer.write_block(f'class {self.classname_prefix}{obj.name}({", ".join(obj.parents)}):'):
             # render child objects
             if not obj.children:
                 buffer.write('pass')
@@ -91,7 +100,7 @@ class DataclassesRenderer:
     def __render_operation(self, parsed_query: ParsedQuery, buffer: CodeChunk, parsed_op: ParsedOperation):
         buffer.write('@dataclass_json')
         buffer.write('@dataclass')
-        with buffer.write_block(f'class {parsed_op.name}:'):
+        with buffer.write_block(f'class {self.classname_prefix}{parsed_op.name}:'):
             buffer.write('__QUERY__ = """')
             buffer.write(parsed_query.query)
             buffer.write('"""')
