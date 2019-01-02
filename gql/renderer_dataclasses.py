@@ -22,11 +22,11 @@ class DataclassesRenderer:
         # We sort fragment nodes to be first and operations to be last because of dependecies
         buffer = CodeChunk()
 
+        self.__render_header(buffer)
+
         if self.internal_ns:
             buffer.write(f'class {self.get_operation_class_name(parsed_query)}Namespace(SimpleNamespace):')
             buffer.indent()
-
-        self.__render_header(buffer)
 
         if self.config.custom_header:
             buffer.write_lines(self.config.custom_header.split('\n'))
@@ -146,7 +146,7 @@ class DataclassesRenderer:
 
             buffer.write('@classmethod')
             with buffer.write_block(f'async def execute_async(cls, {vars_args} on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None):'):
-                buffer.write(f'client = AsyncClient(\'{self.config.schema}\')')
+                buffer.write(f'client = AsyncIOClient(\'{self.config.schema}\')')
                 buffer.write(f'variables = {variables_dict}')
                 buffer.write(f'response_text = await client.call(cls.__QUERY__, variables=variables, on_before_callback=on_before_callback)')
                 buffer.write(f'return cls.from_json(response_text)')
