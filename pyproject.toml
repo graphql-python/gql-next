@@ -15,7 +15,7 @@ jinja2 = "^2.10"
 inflection = "^0.3.1"
 dataclasses-json = "^0.2.0"
 
-aiohttp = {version = "^3.4", optional = true}
+aiohttp = {version = "^3.5", optional = true}
 watchdog = "^0.9.0"
 
 [tool.poetry.extras]
@@ -29,8 +29,8 @@ pytest-expecter = "*"
 pytest-random = "*"
 pytest-cov = "*"
 freezegun = "*"
-verchew = "^1.4"
-pre_commit = "~=1.12.0"
+verchew = "^1.5"
+pre_commit = "~=1.13.0"
 ipython = "^7.0"
 pytest-mock = "^1.10"
 deepdiff = "^3.3"
