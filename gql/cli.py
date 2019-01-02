@@ -39,7 +39,7 @@ def cli():
 @click.option('-c', '--config', 'config_filename', default=DEFAULT_CONFIG_FNAME, type=click.Path(exists=True))
 def init(schema, root, config_filename):
     if isfile(config_filename):
-        click.confirm('gql.yml already exists. Are you sure you want to continue?', abort=True)
+        click.confirm(f'{config_filename} already exists. Are you sure you want to continue?', abort=True)
 
     documents = join_paths(root, '**/*.graphql')
     config = Config(
