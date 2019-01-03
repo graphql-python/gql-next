@@ -1,8 +1,13 @@
 import pytest
 from datetime import datetime
-from dataclasses import field
+
+from graphql import GraphQLEnumType, GraphQLEnumValue, GraphQLField, GraphQLNonNull, GraphQLString, GraphQLInt, \
+    GraphQLArgument, GraphQLSchema, GraphQLObjectType
+
 from gql.config import Config
+from gql.query_parser import QueryParser
 from gql.renderer_dataclasses import DataclassesRenderer
+
 
 @pytest.fixture
 def swapi_dataclass_renderer(swapi_schema):
@@ -292,6 +297,99 @@ def test_simple_query_with_enums(github_parser, github_dataclass_renderer, modul
     assert node
     assert node.author.login == 'whatever'
     assert node.authorAssociation == m.CommentAuthorAssociation.FIRST_TIMER
+
+
+def test_simple_query_with_enums_default_value(module_compiler):
+    """
+        enum LengthUnit {
+          METER
+          KM
+        }
+
+        type Starship {
+          id: ID!
+          name: String!
+          length(unit: LengthUnit = METER): Float
+        }
+
+        type Query {
+            ship(id: String!): Starship
+        }
+    """
+
+    length_unit_enum = GraphQLEnumType(
+        'LengthUnit',
+        {
+            'METER': GraphQLEnumValue('METER'),
+            'KM': GraphQLEnumValue('KM'),
+        },
+        description='One of the films in the Star Wars Trilogy',
+    )
+
+    starship_type = GraphQLObjectType(
+        'Starship',
+        lambda: {
+            'id': GraphQLField(GraphQLNonNull(GraphQLString), description='The id of the ship.'),
+            'name': GraphQLField(GraphQLString, description='The name of the ship.'),
+            'length': GraphQLField(
+                GraphQLInt,
+                args={
+                    'unit': GraphQLArgument(
+                        GraphQLNonNull(length_unit_enum), default_value='METER', description='id of the droid'
+                    )
+                }
+            )
+        }
+    )
+
+    query_type = GraphQLObjectType(
+        'Query',
+        lambda: {
+            'ship': GraphQLField(
+                starship_type,
+                args={
+                    'id': GraphQLArgument(GraphQLNonNull(GraphQLString), description='id of the ship')
+                },
+            )
+        }
+    )
+
+    schema = GraphQLSchema(query_type, types=[length_unit_enum, starship_type])
+
+    query = """
+        query GetStarship {
+            ship(id: "Enterprise") {
+                id
+                name
+                length(unit: METER)
+            }
+        }
+    """
+    query_parser = QueryParser(schema)
+    query_renderer = DataclassesRenderer(schema, Config(schema='schemaurl', endpoint='schemaurl', documents=''))
+    parsed = query_parser.parse(query)
+    rendered = query_renderer.render(parsed)
+
+    m = module_compiler(rendered)
+    response = m.GetStarship.from_json("""
+        {
+            "data": {
+                "ship": {
+                    "id": "Enterprise",
+                    "name": "Enterprise",
+                    "length": 100
+                }
+            }
+        }
+    """)
+
+    assert response
+
+    ship = response.data.ship
+    assert ship
+    assert ship.id == 'Enterprise'
+    assert ship.name == 'Enterprise'
+    assert ship.length == 100
 
 
 def test_simple_query_with_datetime(swapi_dataclass_renderer, swapi_parser, module_compiler, mocker):

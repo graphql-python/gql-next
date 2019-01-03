@@ -150,18 +150,20 @@ class DataclassesRenderer:
     def __render_field(parsed_query: ParsedQuery, buffer: CodeChunk, field: ParsedField):
         enum_names = [e.name for e in parsed_query.enums]
         is_enum = field.type in enum_names
+        suffix = ''
+        field_type = field.type
+
         if is_enum:
-            buffer.write(f'{field.name}: {field.type} = enum_field({field.type})')   # TODO: enum default value?
-            return
+            suffix = f'= enum_field({field.type})'
 
         if field.type == 'DateTime':
-            buffer.write(f'{field.name}: datetime = DATETIME_FIELD')  # TODO: datetime default value?
-            return
+            suffix = '= DATETIME_FIELD'
+            field_type = 'datetime'
 
         if field.nullable:
-            buffer.write(f'{field.name}: {field.type} = {field.default_value}')
-        else:
-            buffer.write(f'{field.name}: {field.type}')
+            suffix = f'= {field.default_value}'
+
+        buffer.write(f'{field.name}: {field_type} {suffix}')
 
     @staticmethod
     def __render_enum(buffer: CodeChunk, enum: ParsedEnum):
