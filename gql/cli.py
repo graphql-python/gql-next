@@ -36,16 +36,20 @@ def cli():
 
 @cli.command()
 @click.option('--schema', prompt=SCHEMA_PROMPT, default='http://localhost:4000')
+@click.option('--endpoint', prompt=SCHEMA_PROMPT, default='same as schema')
 @click.option('--root', prompt=ROOT_PROMPT, default='./src')
-@click.option('-c', '--config', 'config_filename', default=DEFAULT_CONFIG_FNAME, type=click.Path(exists=True))
-def init(schema, root, config_filename):
+@click.option('-c', '--config', 'config_filename', default=DEFAULT_CONFIG_FNAME, type=click.Path(exists=False))
+def init(schema, endpoint, root, config_filename):
     if isfile(config_filename):
         click.confirm(f'{config_filename} already exists. Are you sure you want to continue?', abort=True)
+
+    if endpoint == 'same as schema':
+        endpoint = schema
 
     documents = join_paths(root, '**/*.graphql')
     config = Config(
         schema=schema,
-        endpoint=schema,
+        endpoint=endpoint,
         documents=documents
     )
 
