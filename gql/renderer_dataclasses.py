@@ -5,12 +5,6 @@ from gql.utils_codegen import CodeChunk
 from gql.query_parser import ParsedQuery, ParsedField, ParsedObject, ParsedEnum, ParsedOperation, ParsedVariableDefinition
 
 
-CLASS_TEMPLATE = """
-@dataclass_json
-@dataclass(frozen=True)
-"""
-
-
 class DataclassesRenderer:
 
     def __init__(self, schema: GraphQLSchema, config: Config):
