@@ -42,7 +42,7 @@ class DataclassesRenderer:
             for enum in parsed_query.enums:
                 self.__render_enum(buffer, enum)
 
-        # Iterate in reverse so that operation is last
+        # Iterate in reverse so that operation is last   # TODO - sort by type and not assume operation  is first in file
         for obj in parsed_query.objects[::-1]:
             if isinstance(obj, ParsedObject):
                 self.__render_object(parsed_query, buffer, obj)
@@ -77,7 +77,7 @@ class DataclassesRenderer:
         buffer.write('@dataclass')
         with buffer.write_block(f'class {obj.name}({", ".join(obj.parents)}):'):
             # render child objects
-            if not obj.children:
+            if not obj.children:  # TODO: if it has fields no need to pass
                 buffer.write('pass')
             else:
                 for child_object in obj.children:
@@ -144,11 +144,11 @@ class DataclassesRenderer:
         enum_names = [e.name for e in parsed_query.enums]
         is_enum = field.type in enum_names
         if is_enum:
-            buffer.write(f'{field.name}: {field.type} = enum_field({field.type})')
+            buffer.write(f'{field.name}: {field.type} = enum_field({field.type})')   # TODO: enum default value?
             return
 
         if field.type == 'DateTime':
-            buffer.write(f'{field.name}: datetime = DATETIME_FIELD')
+            buffer.write(f'{field.name}: datetime = DATETIME_FIELD')  # TODO: datetime default value?
             return
 
         if field.nullable:
