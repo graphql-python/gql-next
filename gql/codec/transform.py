@@ -1,5 +1,5 @@
 from io import BytesIO
-from tokenize import tokenize, TokenInfo, NL, NEWLINE, ENCODING, NAME, OP
+from tokenize import tokenize, TokenInfo, NL, NEWLINE, ENCODING, NAME, OP, STRING
 
 from gql.config import Config
 from gql.query_parser import QueryParser
@@ -54,11 +54,11 @@ def gql_transform(stream: BytesIO):
 
     query_started = False
     for token in tokens:
-        if token.type == 1 and token.string == 'gql':  # type NAME
+        if token.type == NAME and token.string == 'gql':
             query_started = True
             continue
 
-        if token.type == 3 and query_started: # type STRING
+        if token.type == STRING and query_started:
             query_str = token.string.strip("'''")
             parsed_query = get_parser().parse(query_str)
             rendered = get_renderer().render(parsed_query)
