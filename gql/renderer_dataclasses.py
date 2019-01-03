@@ -42,8 +42,8 @@ class DataclassesRenderer:
             for enum in parsed_query.enums:
                 self.__render_enum(buffer, enum)
 
-        # Iterate in reverse so that operation is last   # TODO - sort by type and not assume operation  is first in file
-        for obj in parsed_query.objects[::-1]:
+        sorted_objects = sorted(parsed_query.objects, key=lambda obj: 1 if isinstance(obj, ParsedOperation) else 0)
+        for obj in sorted_objects:
             if isinstance(obj, ParsedObject):
                 self.__render_object(parsed_query, buffer, obj)
             elif isinstance(obj, ParsedOperation):
@@ -90,6 +90,8 @@ class DataclassesRenderer:
             # pass if not children or fields
             if not (obj.children or obj.fields):
                 buffer.write('pass')
+
+        buffer.write('')
 
     def __render_operation(self, parsed_query: ParsedQuery, buffer: CodeChunk, parsed_op: ParsedOperation):
         buffer.write('@dataclass_json')

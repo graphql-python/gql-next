@@ -162,6 +162,54 @@ def test_simple_query_with_complex_fragment(swapi_parser, swapi_dataclass_render
     assert data.luke.home.name == 'Arakis'
 
 
+def test_simple_query_with_complex_fragments(swapi_parser, swapi_dataclass_renderer, module_compiler):
+    query = """
+        fragment PlanetFields on Planet {
+          name
+          population
+          terrains
+        }
+
+        fragment CharacterFields on Person {
+          name
+          home: homeworld {
+            ...PlanetFields
+          }
+        }
+
+        query GetPerson {
+          luke: character(id: "luke") {
+            ...CharacterFields
+          }
+        }
+    """
+
+    parsed = swapi_parser.parse(query)
+    rendered = swapi_dataclass_renderer.render(parsed)
+
+    m = module_compiler(rendered)
+    response = m.GetPerson.from_json("""
+    {
+        "data": {
+            "luke": {
+                "name": "Luke Skywalker",
+                "home": {
+                    "name": "Arakis",
+                    "population": "1,000,000",
+                    "terrains": ["Desert"]
+                }
+            }
+        }
+    }
+    """)
+
+    assert response
+
+    data = response.data
+    assert data.luke.name == 'Luke Skywalker'
+    assert data.luke.home.name == 'Arakis'
+
+
 def test_simple_query_with_complex_inline_fragment(swapi_parser, swapi_dataclass_renderer, module_compiler):
     query = """
         query GetPerson {
