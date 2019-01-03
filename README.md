@@ -23,7 +23,7 @@ Then go to your project folder and run `gql init`
 
 ## Quick Start
 
-`gql` works by parsing query files (`**/*.graphql` by default) into their own Python module where 
+`gql` works by parsing query files (`**/*.graphql` by default) into their own Python module where
 an class, named after the operation defined in the file, allows you to make that query and get a typed
 response.
 
@@ -53,18 +53,17 @@ from gql.clients import Client, AsyncIOClient
 class GetFilm:
     @dataclass_json
     @dataclass
-    class GetFilmData():
+    class GetFilmData:
         @dataclass_json
         @dataclass
-        class Film():
-            pass
+        class Film:
             title: str
             director: str
         film: Film = None
-    
+
     data: GetFilmData = None
     errors: Any = None
-    
+
     @classmethod
     def execute(cls, id: str, on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None) -> GetFilm:
         ...
