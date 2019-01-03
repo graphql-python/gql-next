@@ -5,12 +5,6 @@ from gql.utils_codegen import CodeChunk
 from gql.query_parser import ParsedQuery, ParsedField, ParsedObject, ParsedEnum, ParsedOperation, ParsedVariableDefinition
 
 
-CLASS_TEMPLATE = """
-@dataclass_json
-@dataclass(frozen=True)
-"""
-
-
 class DataclassesRenderer:
 
     def __init__(self, schema: GraphQLSchema, config: Config, internal_ns: bool = False):
@@ -41,8 +35,8 @@ class DataclassesRenderer:
             for enum in parsed_query.enums:
                 self.__render_enum(buffer, enum)
 
-        # Iterate in reverse so that operation is last   # TODO - sort by type and not assume operation  is first in file
-        for obj in parsed_query.objects[::-1]:
+        sorted_objects = sorted(parsed_query.objects, key=lambda obj: 1 if isinstance(obj, ParsedOperation) else 0)
+        for obj in sorted_objects:
             if isinstance(obj, ParsedObject):
                 self.__render_object(parsed_query, buffer, obj)
             elif isinstance(obj, ParsedOperation):
@@ -96,20 +90,25 @@ class DataclassesRenderer:
         buffer.write('')
 
     def __render_object(self, parsed_query: ParsedQuery, buffer: CodeChunk, obj: ParsedObject):
+        class_parents = '' if not obj.parents else f'({", ".join(obj.parents)})'
+
         buffer.write('@dataclass_json')
         buffer.write('@dataclass')
-        with buffer.write_block(f'class {obj.name}({", ".join(obj.parents)}):'):
+        with buffer.write_block(f'class {obj.name}{class_parents}:'):
             # render child objects
-            if not obj.children:  # TODO: if it has fields no need to pass
-                buffer.write('pass')
-            else:
-                for child_object in obj.children:
-                    self.__render_object(parsed_query, buffer, child_object)
+            for child_object in obj.children:
+                self.__render_object(parsed_query, buffer, child_object)
 
             # render fields
             sorted_fields = sorted(obj.fields, key=lambda f: 1 if f.nullable else 0)
             for field in sorted_fields:
                 self.__render_field(parsed_query, buffer, field)
+
+            # pass if not children or fields
+            if not (obj.children or obj.fields):
+                buffer.write('pass')
+
+        buffer.write('')
 
     def __render_operation(self, parsed_query: ParsedQuery, buffer: CodeChunk, parsed_op: ParsedOperation):
         buffer.write('@dataclass_json')
@@ -145,6 +144,8 @@ class DataclassesRenderer:
                 buffer.write('response_text = client.call(cls.__QUERY__, variables=variables, on_before_callback=on_before_callback)')
                 buffer.write('return cls.from_json(response_text)')
 
+            buffer.write('')
+
             buffer.write('@classmethod')
             with buffer.write_block(f'async def execute_async(cls, {vars_args} on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None):'):
                 buffer.write(f'client = AsyncIOClient(\'{self.config.endpoint}\')')
@@ -166,18 +167,20 @@ class DataclassesRenderer:
     def __render_field(parsed_query: ParsedQuery, buffer: CodeChunk, field: ParsedField):
         enum_names = [e.name for e in parsed_query.enums]
         is_enum = field.type in enum_names
+        suffix = ''
+        field_type = field.type
+
         if is_enum:
-            buffer.write(f'{field.name}: {field.type} = enum_field({field.type})')   # TODO: enum default value?
-            return
+            suffix = f'= enum_field({field.type})'
 
         if field.type == 'DateTime':
-            buffer.write(f'{field.name}: datetime = DATETIME_FIELD')  # TODO: datetime default value?
-            return
+            suffix = '= DATETIME_FIELD'
+            field_type = 'datetime'
 
         if field.nullable:
-            buffer.write(f'{field.name}: {field.type} = {field.default_value}')
-        else:
-            buffer.write(f'{field.name}: {field.type}')
+            suffix = f'= {field.default_value}'
+
+        buffer.write(f'{field.name}: {field_type} {suffix}')
 
     @staticmethod
     def __render_enum(buffer: CodeChunk, enum: ParsedEnum):
