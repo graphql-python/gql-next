@@ -6,11 +6,11 @@ from gql.renderer_dataclasses import DataclassesRenderer
 
 @pytest.fixture
 def swapi_dataclass_renderer(swapi_schema):
-    return DataclassesRenderer(swapi_schema, Config(schema='schemaurl', documents=''))
+    return DataclassesRenderer(swapi_schema, Config(schema='schemaurl', endpoint='schemaurl', documents=''))
 
 @pytest.fixture
 def github_dataclass_renderer(swapi_schema):
-    return DataclassesRenderer(swapi_schema, Config(schema='schemaurl', documents=''))
+    return DataclassesRenderer(swapi_schema, Config(schema='schemaurl', endpoint='schemaurl', documents=''))
 
 
 def test_simple_query(swapi_dataclass_renderer, swapi_parser, module_compiler):
