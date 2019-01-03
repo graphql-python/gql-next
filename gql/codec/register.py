@@ -1,28 +1,31 @@
 #!/usr/bin/env python
+import sys
 import codecs
 import encodings
-import sys
 from encodings import utf_8
 from io import BytesIO
 
-from gql.codec.transform import gql_transform, gql_transform_string
+from gql.codec.transform import gql_transform
 
 
-def gql_decode(input, errors='strict'):
-    return utf_8.decode(input)
-    # return utf_8.decode(gql_transform_string(input), errors)
+def gql_decode(value, **_):
+    return utf_8.decode(value)
 
 
 class GQLIncrementalDecoder(utf_8.IncrementalDecoder):
-    def decode(self, input: bytes, final: bool=False):
+    def decode(self, input: bytes, final: bool = False):  # pylint:disable=redefined-builtin
         self.buffer += input
         if final:
             buff = self.buffer
             self.buffer = ''
             return gql_transform(BytesIO(buff))
 
+        return None
+
 
 class GQLStreamReader(utf_8.StreamReader):
+    # pylint:disable=abstract-method
+
     def __init__(self, *args, **kwargs):
         super().__init__(self, *args, **kwargs)
         self.stream = BytesIO(gql_decode(self.stream))
@@ -41,7 +44,8 @@ def search_function(encoding):
         incrementalencoder=utf8.incrementalencoder,
         incrementaldecoder=GQLIncrementalDecoder,
         streamreader=GQLStreamReader,
-        streamwriter=utf8.streamwriter)
+        streamwriter=utf8.streamwriter
+    )
 
 
 codecs.register(search_function)
@@ -55,7 +59,9 @@ Usage:
     python -m gql.codec.register path/to/script.py [args...]
 """
 
-if __name__ == '__main__':
+
+def main():
+    # pylint:disable=exec-used,redefined-builtin,global-statement
     script = None
     if len(sys.argv) >= 3 and sys.argv[1] == '-m':
         mode = 'module'
@@ -73,12 +79,16 @@ if __name__ == '__main__':
         import runpy
         runpy.run_module(module, run_name='__main__', alter_sys=True)
     elif mode == 'script':
-        with open(script, encoding='gql') as f:
+        with open(script) as file:
             global __file__
             __file__ = script
             # Use globals as our "locals" dictionary so that something
             # that tries to import __main__ (e.g. the unittest module)
             # will see the right things.
-            code = f.read()
+            code = file.read()
             print(code)
             exec(code, globals())
+
+
+if __name__ == '__main__':
+    main()

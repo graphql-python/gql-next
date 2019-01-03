@@ -53,7 +53,8 @@ class DataclassesRenderer:
 
         return str(buffer)
 
-    def get_operation_class_name(self, parsed_query: ParsedQuery):
+    @staticmethod
+    def get_operation_class_name(parsed_query: ParsedQuery):
         for obj in parsed_query.objects[::-1]:
             if isinstance(obj, ParsedOperation):
                 return obj.name

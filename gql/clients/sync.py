@@ -16,9 +16,9 @@ class Client:
         }
 
     def call(self, query,
-                   variables=None,
-                   return_json=False,
-                   on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None) -> Union[dict, str]:
+             variables=None,
+             return_json=False,
+             on_before_callback: Callable[[Mapping[str, str], Mapping[str, str]], None] = None) -> Union[dict, str]:
 
         headers = self.__headers.copy()
 

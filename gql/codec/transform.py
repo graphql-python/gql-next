@@ -87,8 +87,8 @@ def gql_transform(stream: BytesIO):
     return result.rstrip()
 
 
-def gql_transform_string(input: str):
-    stream = BytesIO(input.encode('utf-8'))
+def gql_transform_string(value: str):
+    stream = BytesIO(value.encode('utf-8'))
     return gql_transform(stream)
 
 
