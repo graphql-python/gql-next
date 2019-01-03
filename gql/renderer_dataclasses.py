@@ -73,20 +73,23 @@ class DataclassesRenderer:
         buffer.write('')
 
     def __render_object(self, parsed_query: ParsedQuery, buffer: CodeChunk, obj: ParsedObject):
+        class_parents = '' if not obj.parents else f'({", ".join(obj.parents)})'
+
         buffer.write('@dataclass_json')
         buffer.write('@dataclass')
-        with buffer.write_block(f'class {obj.name}({", ".join(obj.parents)}):'):
+        with buffer.write_block(f'class {obj.name}{class_parents}:'):
             # render child objects
-            if not obj.children:  # TODO: if it has fields no need to pass
-                buffer.write('pass')
-            else:
-                for child_object in obj.children:
-                    self.__render_object(parsed_query, buffer, child_object)
+            for child_object in obj.children:
+                self.__render_object(parsed_query, buffer, child_object)
 
             # render fields
             sorted_fields = sorted(obj.fields, key=lambda f: 1 if f.nullable else 0)
             for field in sorted_fields:
                 self.__render_field(parsed_query, buffer, field)
+
+            # pass if not children or fields
+            if not (obj.children or obj.fields):
+                buffer.write('pass')
 
     def __render_operation(self, parsed_query: ParsedQuery, buffer: CodeChunk, parsed_op: ParsedOperation):
         buffer.write('@dataclass_json')
