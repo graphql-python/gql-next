@@ -21,11 +21,10 @@ result = GetFilm.execute()
 film = result.data.film
 """
 
-SimpleNamespace
 
 @pytest.fixture(autouse=True)
 def mock_codec_config(swapi_schema, swapi_parser, mocker):
-    renderer = DataclassesRenderer(swapi_schema, Config(schema='schemaurl', documents=''), internal_ns=True)
+    renderer = DataclassesRenderer(swapi_schema, Config(schema='schemaurl', endpoint='schemaurl', documents=''), internal_ns=True)
 
     mocker.patch.object(transform, 'get_schema', return_value=swapi_schema)
     mocker.patch.object(transform, 'get_parser', return_value=swapi_parser)

@@ -1,6 +1,5 @@
 import pytest
 from datetime import datetime
-from dataclasses import field
 from gql.config import Config
 from gql.renderer_dataclasses import DataclassesRenderer
 
