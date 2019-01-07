@@ -32,13 +32,13 @@ class GQLStreamReader(utf_8.StreamReader):
 
 
 def search_function(encoding):
-    if encoding != 'gql':
+    if encoding not in ('gql', 'graphql', 'pygql'):
         return None
 
     # Assume utf8 encoding
     utf8 = encodings.search_function('utf8')
     return codecs.CodecInfo(
-        name='gql',
+        name=encoding,
         encode=utf8.encode,
         decode=gql_decode,
         incrementalencoder=utf8.incrementalencoder,
