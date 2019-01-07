@@ -51,7 +51,7 @@ def search_function(encoding):
 codecs.register(search_function)
 
 _USAGE = """\
-Wraps a python command to allow it to recognize pyxl-coded files with
+Wraps a python command to allow it to recognize GraphQL-coded files with
 no source modifications.
 
 Usage:
