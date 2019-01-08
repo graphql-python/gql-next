@@ -18,6 +18,26 @@ def github_dataclass_renderer(swapi_schema):
     return DataclassesRenderer(swapi_schema, Config(schema='schemaurl', endpoint='schemaurl', documents=''))
 
 
+def test_renders_custom_headers(swapi_schema, swapi_parser, module_compiler):
+    query = """
+            query GetFilm {
+              returnOfTheJedi: film(id: "1") {
+                title
+                director
+              }
+            }
+        """
+
+    custom_header = '# Works!'
+    renderer = DataclassesRenderer(swapi_schema, Config(schema='schemaurl', endpoint='schemaurl', documents='', custom_header=custom_header))
+
+    parsed = swapi_parser.parse(query)
+    rendered = renderer.render(parsed)
+
+    assert rendered
+    assert custom_header in rendered
+
+
 def test_simple_query(swapi_dataclass_renderer, swapi_parser, module_compiler):
     query = """
         query GetFilm {
