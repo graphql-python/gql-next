@@ -59,7 +59,7 @@ def gql_transform(stream: BytesIO):
             continue
 
         if token.type == STRING and query_started:
-            query_str = token.string.strip("'''")
+            query_str = token.string.strip("'''").strip('"""')
             parsed_query = get_parser().parse(query_str)
             rendered = get_renderer().render(parsed_query)
 
