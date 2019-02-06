@@ -1,0 +1,6 @@
+{
+  "schema": "http://localhost:5000/graphql",
+  "endpoint": "http://localhost:5000/graphql",
+  "documents": "./tests/**/*.gql",
+  "custom_header_exports": ""
+}
