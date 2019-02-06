@@ -1,1 +1,1 @@
-import gql.codec.register
+import gql.codec.fast_register

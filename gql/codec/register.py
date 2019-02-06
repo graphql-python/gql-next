@@ -7,9 +7,19 @@ from io import BytesIO
 
 from gql.codec.transform import gql_transform
 
+DEFAULT_RESULT = None
+
 
 def gql_decode(value, **_):
-    return utf_8.decode(value)
+    if isinstance(value, memoryview):
+        value = value.tobytes().decode("utf-8")
+
+    # strip the gql coding line from code so that the python tokenizer can read the code
+    value = '# coding: utf-8\n' + value
+
+    bio = BytesIO(value.encode('utf-8'))
+    result = gql_transform(bio)
+    return result, len(result)
 
 
 class GQLIncrementalDecoder(utf_8.IncrementalDecoder):
@@ -20,7 +30,7 @@ class GQLIncrementalDecoder(utf_8.IncrementalDecoder):
             self.buffer = ''
             return gql_transform(BytesIO(buff))
 
-        return None
+        return DEFAULT_RESULT
 
 
 class GQLStreamReader(utf_8.StreamReader):
@@ -48,7 +58,7 @@ def search_function(encoding):
     )
 
 
-codecs.register(search_function)
+import gql.codec.fast_register
 
 _USAGE = """\
 Wraps a python command to allow it to recognize GraphQL-coded files with
