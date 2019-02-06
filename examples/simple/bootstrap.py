@@ -1,4 +1,4 @@
-import gql.codec.fast_register
+import gql.codec.fast_register  # pylint:disable=unused-import
 
 import client
 client.main()
