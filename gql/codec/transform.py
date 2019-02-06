@@ -1,3 +1,4 @@
+import os
 from io import BytesIO
 from tokenize import tokenize, TokenInfo, NL, NEWLINE, ENCODING, NAME, OP, STRING
 
@@ -84,7 +85,7 @@ def gql_transform(stream: BytesIO):
         query_started = False
 
     result = untokenize(transformed_tokens)
-    return result.rstrip()
+    return result.rstrip() + os.linesep
 
 
 def gql_transform_string(value: str):
