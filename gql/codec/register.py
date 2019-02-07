@@ -7,10 +7,20 @@ from encodings import utf_8
 from io import BytesIO
 
 from gql.codec.transform import gql_transform
+from gql.query_parser import InvalidQueryError
 
 
 def gql_decode(value, **_):
-    return utf_8.decode(value)
+    decoded, decoded_length = utf_8.decode(value)
+    decoded = decoded.replace('# coding: gql', '')
+    try:
+        bio = BytesIO(decoded.encode('utf-8'))
+        result = gql_transform(bio)
+        return result, decoded_length
+    except InvalidQueryError:
+        raise
+    except Exception as ex:
+        return decoded, decoded_length
 
 
 class GQLIncrementalDecoder(utf_8.IncrementalDecoder):
@@ -22,7 +32,8 @@ class GQLIncrementalDecoder(utf_8.IncrementalDecoder):
             buff = buff.decode('utf-8')
             buff = buff.replace('# coding: gql', '')
             buff = buff.encode('utf-8')
-            return gql_transform(BytesIO(buff))
+            result = gql_transform(BytesIO(buff))
+            return result
 
         return None
 
