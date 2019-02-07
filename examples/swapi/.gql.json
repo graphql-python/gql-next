@@ -1,0 +1,6 @@
+{
+  "schema": "/Users/ekampf/workspace/ebates/innovation/gql/tests/fixtures/swapi-schema.graphql",
+  "endpoint": "http://swapi.graphene-python.org/graphql",
+  "documents": "./tests/**/*.gql",
+  "custom_header_exports": ""
+}

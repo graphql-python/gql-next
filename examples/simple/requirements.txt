@@ -1,0 +1,6 @@
+flask
+flask-graphql
+graphene~=2.1.3
+
+
+pip install ./../../../dist/gql-0.1.0-py3-none-any.whl

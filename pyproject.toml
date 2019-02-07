@@ -5,6 +5,7 @@ description = "Python GraphQL Client Library"
 authors = ["Eran Kampf <eran@ekampf.com>"]
 license = "MIT"
 readme = "README.md"
+include = ["gql.pth"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
@@ -13,7 +14,7 @@ graphql-core-next = "~=1.0.1"
 requests = "^2.21"
 jinja2 = "^2.10"
 inflection = "^0.3.1"
-dataclasses-json = "^0.2.0"
+dataclasses-json = "^0.2.1"
 
 aiohttp = {version = "^3.5", optional = true}
 watchdog = "^0.9.0"

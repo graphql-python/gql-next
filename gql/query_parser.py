@@ -224,7 +224,6 @@ class InvalidQueryError(Exception):
 class QueryParser:
     def __init__(self, schema: GraphQLSchema):
         self.schema = schema
-        self.__jinja2_env = None
 
     def parse(self, query: str, should_validate: bool = True) -> ParsedQuery:
         document_ast = parse(query)
