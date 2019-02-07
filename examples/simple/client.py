@@ -3,7 +3,7 @@
 # pylint:disable=no-member,unused-import
 QUERY = gql"""
 query HelloQuery {
-  helloo(argument: "World")
+  hello(argument: "World")
 }
 """
 # pylint:enable=no-member,unused-import
