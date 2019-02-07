@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import sys
 import codecs
 import encodings
@@ -7,19 +8,9 @@ from io import BytesIO
 
 from gql.codec.transform import gql_transform
 
-DEFAULT_RESULT = None
-
 
 def gql_decode(value, **_):
-    if isinstance(value, memoryview):
-        value = value.tobytes().decode("utf-8")
-
-    # strip the gql coding line from code so that the python tokenizer can read the code
-    value = '# coding: utf-8\n' + value
-
-    bio = BytesIO(value.encode('utf-8'))
-    result = gql_transform(bio)
-    return result, len(result)
+    return utf_8.decode(value)
 
 
 class GQLIncrementalDecoder(utf_8.IncrementalDecoder):
@@ -28,9 +19,12 @@ class GQLIncrementalDecoder(utf_8.IncrementalDecoder):
         if final:
             buff = self.buffer
             self.buffer = ''
+            buff = buff.decode('utf-8')
+            buff = buff.replace('# coding: gql', '')
+            buff = buff.encode('utf-8')
             return gql_transform(BytesIO(buff))
 
-        return DEFAULT_RESULT
+        return None
 
 
 class GQLStreamReader(utf_8.StreamReader):
