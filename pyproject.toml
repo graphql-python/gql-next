@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "gql"
+name = "gql-next"
 version = "0.1.0"
 description = "Python GraphQL Client Library"
 authors = ["Eran Kampf <eran@ekampf.com>"]
