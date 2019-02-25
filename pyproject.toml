@@ -5,6 +5,9 @@ description = "Python GraphQL Client Library"
 authors = ["Eran Kampf <eran@ekampf.com>"]
 license = "MIT"
 readme = "README.md"
+packages = [
+    { include="gql", from="." },
+]
 
 [tool.poetry.dependencies]
 python = "^3.7"
