@@ -46,11 +46,10 @@ def init(schema, endpoint, root, config_filename):
     if endpoint == 'same as schema':
         endpoint = schema
 
-    documents = join_paths(root, '**/*.graphql')
     config = Config(
         schema=schema,
         endpoint=endpoint,
-        documents=documents
+        documents=join_paths(root, '**/*.graphql')
     )
 
     config.save(config_filename)
