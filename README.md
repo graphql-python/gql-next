@@ -16,7 +16,7 @@ API call while enjoying the advantages that come with GraphQL.
 Simply install from PyPi:
 
 ```bash
-pip install !!TBD!!
+pip install gql-next
 ```
 
 Then go to your project folder and run `gql init`

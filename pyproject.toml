@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "gql"
-version = "0.1.1"
+name = "gql-next"
+version = "0.1.0"
 description = "Python GraphQL Client Library"
 authors = ["Eran Kampf <eran@ekampf.com>"]
 license = "MIT"
