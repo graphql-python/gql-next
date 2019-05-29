@@ -477,17 +477,20 @@ def test_non_nullable_list(module_compiler, mocker):
                "people": [
                   {
                     "name": "eran"
+                  },
+                  {
+                    "name": "eran1"
                   }
                ]
            }
        }
     """
 
-    result = m.GetFilm.execute('luke')
+    result = m.GetPeople.execute()
     assert result
-    assert isinstance(result, m.GetFilm)
+    assert isinstance(result, m.GetPeople)
 
     data = result.data
-    assert data.returnOfTheJedi.title == 'Return of the Jedi'
-    assert data.returnOfTheJedi.director == 'George Lucas'
-    assert data.returnOfTheJedi.releaseDate == now
+    assert len(data.people) == 2
+    assert data.people[0].name == 'eran'
+    assert data.people[1].name == 'eran1'

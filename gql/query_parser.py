@@ -183,6 +183,10 @@ class FieldToTypeMatcherVisitor(Visitor):
 
         if isinstance(scalar, GraphQLList):
             scalar = scalar.of_type
+            if isinstance(scalar, GraphQLNonNull):
+                scalar = scalar.of_type
+                nullable = False
+
             mapping = f'List[{mapping.get(str(scalar), str(scalar))}]'
         else:
             mapping = mapping.get(str(scalar), str(scalar))
