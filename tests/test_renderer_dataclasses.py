@@ -474,13 +474,10 @@ def test_non_nullable_list(module_compiler, mocker):
     call_mock.return_value = """
        {
            "data": {
-               "planets": [
+               "people": [
                   {
-                    "climate": [
-                      "temperate",
-                      "tropical"
-                    ]
-                  },
+                    "name": "eran"
+                  }
                ]
            }
        }
