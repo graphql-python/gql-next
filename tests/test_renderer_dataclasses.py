@@ -431,3 +431,66 @@ def test_simple_query_with_datetime(swapi_dataclass_renderer, swapi_parser, modu
     assert data.returnOfTheJedi.title == 'Return of the Jedi'
     assert data.returnOfTheJedi.director == 'George Lucas'
     assert data.returnOfTheJedi.releaseDate == now
+
+
+def test_non_nullable_list(module_compiler, mocker):
+    from gql.query_parser import QueryParser
+    from graphql import (
+        GraphQLSchema, GraphQLObjectType, GraphQLField, GraphQLString, GraphQLList, GraphQLNonNull)
+
+    PersonType = GraphQLObjectType('Person', lambda: {
+        'name': GraphQLField(GraphQLString),
+    })
+
+    schema = GraphQLSchema(
+        query=GraphQLObjectType(
+            name='RootQueryType',
+            fields={
+                'people': GraphQLField(
+                    GraphQLList(GraphQLNonNull(PersonType)),
+                    resolve=lambda obj, info: {'name':'eran'}
+                )
+            }))
+
+    query = """
+            query GetPeople {
+              people {
+                name
+              }
+            }
+        """
+
+    parser = QueryParser(schema)
+    dataclass_renderer = DataclassesRenderer(schema, Config(schema='schemaurl', endpoint='schemaurl', documents=''))
+
+    parsed = parser.parse(query)
+    rendered = dataclass_renderer.render(parsed)
+
+    m = module_compiler(rendered)
+
+    now = datetime.now()
+
+    call_mock = mocker.patch.object(m.Client, 'call')
+    call_mock.return_value = """
+       {
+           "data": {
+               "people": [
+                  {
+                    "name": "eran"
+                  },
+                  {
+                    "name": "eran1"
+                  }
+               ]
+           }
+       }
+    """
+
+    result = m.GetPeople.execute()
+    assert result
+    assert isinstance(result, m.GetPeople)
+
+    data = result.data
+    assert len(data.people) == 2
+    assert data.people[0].name == 'eran'
+    assert data.people[1].name == 'eran1'
