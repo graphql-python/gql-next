@@ -1,7 +1,9 @@
+DEPRECATION NOTICE: this package is deprecated in favor of the new changes made in `gql` over at https://github.com/graphql-python/gql
+
 # GQL: Python GraphQL Client Library
 
-[![Build Status](https://travis-ci.org/ekampf/gql-nesxt.svg?branch=master)](https://travis-ci.org/ekampf/gql-next)
-[![Coverage Status](https://coveralls.io/repos/github/ekampf/gql/badge.svg?branch=master)](https://coveralls.io/github/ekampf/gql?branch=master)
+[![Build Status](https://travis-ci.org/ekampf/gql-nesxt.svg?branch=master)](https://travis-ci.org/graphql-python/gql-next)
+[![Coverage Status](https://coveralls.io/repos/github/ekampf/gql/badge.svg?branch=master)](https://coveralls.io/github/graphql-python/gql?branch=master)
 
 ## Introduction
 
